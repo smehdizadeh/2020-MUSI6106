@@ -98,11 +98,25 @@ protected:
     CCombFilterIf ();
     virtual ~CCombFilterIf ();
 
+    virtual Error_t freeMemory();
+    virtual Error_t allocMemory();
+    int getNumChannels() const;
+
+    static long int    m_kiDelayLineLength; //delay line length
+
 private:
+    CCombFilterIf(const CCombFilterIf& that);
+
+    virtual Error_t processFIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames) = 0;
+    virtual Error_t processIIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames) = 0;
+
     bool            m_bIsInitialized;   //!< internal bool to check whether the init function has been called
+    CombFilterType_t m_eFilterType;     //!< FIR or IIR
+    int             m_iNumChannels;     //!< number of filter channels
     CCombFilterBase *m_pCCombFilter;    //!< handle of the comb filter
 
     float           m_fSampleRate;      //!< audio sample rate in Hz
+    float           m_fFilterGain;
 };
 
 #endif // #if !defined(__CombFilterIf_hdr__)
