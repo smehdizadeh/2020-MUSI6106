@@ -15,7 +15,7 @@ long int       CCombFilterIf::m_kiDelayLineLength; //delay line length
 
 CCombFilterIf::CCombFilterIf () :
     m_bIsInitialized(false),
-    m_pCCombFilter(0),
+    //m_pCCombFilter(0),
     m_fSampleRate(0)
 {
     // this never hurts
@@ -121,10 +121,12 @@ Error_t CCombFilterIf::process( float **ppfInputBuffer, float **ppfOutputBuffer,
         return kNotInitializedError;
 
     //check filter type
-    if (m_eFilterType == CCombFilterIf::CombFilterType_t::kCombFIR)
+    if (m_eFilterType == CCombFilterIf::CombFilterType_t::kCombFIR) //FIR filter implementation
         return processFIRIntern(ppfInputBuffer, ppfOutputBuffer, iNumberOfFrames);
-    if (m_eFilterType == CCombFilterIf::CombFilterType_t::kCombIIR)
+    else if (m_eFilterType == CCombFilterIf::CombFilterType_t::kCombIIR) //IIR filter implementation
         return processIIRIntern(ppfInputBuffer, ppfOutputBuffer, iNumberOfFrames);
+    else
+        return kFunctionInvalidArgsError; //if m_eFilterType is not FIR or IIR as specified above, return invalid
 }
 
 Error_t CCombFilterIf::setParam( FilterParam_t eParam, float fParamValue )
@@ -158,11 +160,14 @@ float CCombFilterIf::getParam( FilterParam_t eParam ) const
         return kNotInitializedError;
 
     //find parameter
-    if (eParam == FilterParam_t::kParamDelay)
+    if (eParam == FilterParam_t::kParamDelay) //delay parameter
         return (m_kiDelayLineLength / m_fSampleRate);
 
-    if (eParam == FilterParam_t::kParamGain)
+    else if (eParam == FilterParam_t::kParamGain) //gain parameter
         return m_fFilterGain;
+
+    else
+        return kFunctionInvalidArgsError; //if eParam is not gain or delay as specified above, return invalid
 }
 
 Error_t CCombFilterIf::freeMemory()

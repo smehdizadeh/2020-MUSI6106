@@ -3,7 +3,7 @@
 
 #include "ErrorDef.h"
 
-class CCombFilterBase;
+//class CCombFilterBase;
 
 /*! \brief interface class for the comb filter (FIR & IIR)
 */
@@ -113,7 +113,7 @@ private:
     bool            m_bIsInitialized;   //!< internal bool to check whether the init function has been called
     CombFilterType_t m_eFilterType;     //!< FIR or IIR
     int             m_iNumChannels;     //!< number of filter channels
-    CCombFilterBase *m_pCCombFilter;    //!< handle of the comb filter
+    //CCombFilterBase *m_pCCombFilter;    //!< handle of the comb filter
 
     float           m_fSampleRate;      //!< audio sample rate in Hz
     float           m_fFilterGain;

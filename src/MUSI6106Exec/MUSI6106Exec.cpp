@@ -11,7 +11,7 @@ using std::cout;
 using std::endl;
 
 // local function declarations
-int     filtering(std::string sInputFilePath, std::string sOutputFilePath, std::string sFilterType, std::string sDelayTime, std::string sFilterGain, int numBlocks);
+int     filtering(std::string sInputFilePath, std::string sOutputFilePath, std::string sFilterType, std::string sMaxDelayLengthInS, std::string sDelayTime, std::string sFilterGain, int numBlocks);
 void    showClInfo();
 void    test3(std::string sFilterType);
 void    test4(std::string sFilterType);
@@ -26,6 +26,7 @@ int main(int argc, char* argv[])
     std::string             sInputFilePath,                 //!< file paths
                             sOutputFilePath,
                             sFilterType,                    //!< filter params (FIR/IIR) (dekay time)
+                            sMaxDelayLengthInS,
                             sDelayTime,
                             sFilterGain;
  
@@ -46,13 +47,13 @@ int main(int argc, char* argv[])
         test4("IIR");
         test5("FIR");
         test5("IIR");
-
+        
         return 0;
     }
-    else if ((argc < 5) && (argc != 1)) //if called with too few command line arguments
+    else if ((argc < 6) && (argc != 1)) //if called with too few command line arguments
     {
         cout << "Missing argument!" << endl;
-        cout << "Please enter <input file path> <FIR/IIR> <delay time in sec> <filter gain (-1:1)>" << endl;
+        cout << "Please enter <input file path> <FIR/IIR> <max delay in sec> <delay time in sec> <filter gain (-1:1)>" << endl;
         return -1;
     }
     else
@@ -61,14 +62,15 @@ int main(int argc, char* argv[])
         sOutputFilePath = sInputFilePath + "Proc.wav"; //output wav file
 
         sFilterType = argv[2]; //filter type
-        sDelayTime = argv[3]; //delay time
-        sFilterGain = argv[4]; //filter gain
+        sMaxDelayLengthInS = argv[3]; //max delay time
+        sDelayTime = argv[4]; //delay time
+        sFilterGain = argv[5]; //filter gain
     }
 
-    return filtering(sInputFilePath, sOutputFilePath, sFilterType, sDelayTime, sFilterGain, 1024);
+    return filtering(sInputFilePath, sOutputFilePath, sFilterType, sMaxDelayLengthInS, sDelayTime, sFilterGain, 1024);
 }
 
-int filtering(std::string sInputFilePath, std::string sOutputFilePath, std::string sFilterType, std::string sDelayTime, std::string sFilterGain, int numBlocks)
+int filtering(std::string sInputFilePath, std::string sOutputFilePath, std::string sFilterType, std::string sMaxDelayLengthInS, std::string sDelayTime, std::string sFilterGain, int numBlocks)
 {
     // declare variables
     CAudioFileIf                *phInputAudioFile = 0;          //!< audio file objects
@@ -78,6 +80,7 @@ int filtering(std::string sInputFilePath, std::string sOutputFilePath, std::stri
     CCombFilterIf               *combFilter = 0;                //!< comb filter
     CCombFilterIf::CombFilterType_t stFilterType;               //!< filter specs
     float                       fDelayTime = 0;
+    float                       fMaxDelayLengthInS = 0;
     float                       fFilterGain = 0;
 
     float                       **ppfInputAudioData = 0;        //!< audio data
@@ -125,12 +128,13 @@ int filtering(std::string sInputFilePath, std::string sOutputFilePath, std::stri
     }
 
     fDelayTime = std::stof(sDelayTime); //convert entered params to float
+    fMaxDelayLengthInS = std::stof(sMaxDelayLengthInS);
     fFilterGain = std::stof(sFilterGain);
 
     //initialize filter
+    combFilter->init(stFilterType, fMaxDelayLengthInS, stFileSpec.fSampleRateInHz, stFileSpec.iNumChannels);
     combFilter->setParam(CCombFilterIf::FilterParam_t::kParamDelay, fDelayTime);
     combFilter->setParam(CCombFilterIf::FilterParam_t::kParamGain, fFilterGain);
-    combFilter->init(stFilterType, fDelayTime, stFileSpec.fSampleRateInHz, stFileSpec.iNumChannels);
 
     //////////////////////////////////////////////////////////////////////////////
     // allocate memory
@@ -215,15 +219,15 @@ void     test3(std::string sFilterType)
     float** ppfProc1 = 0;
     float** ppfProc2 = 0;
 
-    std::string sInputFilePath = "C:/Users/sophi/Documents/GATECH/MUSI6106/2020-MUSI6106/samp2_sawtooth.wav";
-    std::string sOutputFilePath1 = "C:/Users/sophi/Documents/GATECH/MUSI6106/2020-MUSI6106/samp2_sawtoothProc1.wav";
-    std::string sOutputFilePath2 = "C:/Users/sophi/Documents/GATECH/MUSI6106/2020-MUSI6106/samp2_sawtoothProc2.wav";
-
+    std::string sInputFilePath = "./samp2_sawtooth.wav";
+    std::string sOutputFilePath1 = "./samp2_sawtoothProc3_1.wav";
+    std::string sOutputFilePath2 = "./samp2_sawtoothProc3_2.wav";
+    
     //create a processed output file with sFilterType comb and 1024 block size
-    filtering(sInputFilePath, sOutputFilePath1, sFilterType, "0.01", "0.5", 1024);
+    filtering(sInputFilePath, sOutputFilePath1, sFilterType, "0.02", "0.01", "0.5", 1024);
 
     //process the same file using 512 block size and write to different output file
-    filtering(sInputFilePath, sOutputFilePath2, sFilterType, "0.01", "0.5", 512);
+    filtering(sInputFilePath, sOutputFilePath2, sFilterType, "0.02", "0.01", "0.5", 512);
 
     //read and compare both files
     phProc1->create(phProc1);
@@ -308,11 +312,11 @@ void     test4(std::string sFilterType)
 
     float** ppfOutput = 0;
 
-    std::string sInputFilePath = "C:/Users/sophi/Documents/GATECH/MUSI6106/2020-MUSI6106/samp3_silence.wav";
-    std::string sOutputFilePath = "C:/Users/sophi/Documents/GATECH/MUSI6106/2020-MUSI6106/samp3_silenceProc.wav";
+    std::string sInputFilePath = "./samp3_silence.wav";
+    std::string sOutputFilePath = "./samp3_silenceProc4.wav";
 
     //create a processed output file with sFilterType comb and 1024 block size
-    filtering(sInputFilePath, sOutputFilePath, sFilterType, "0.01", "0.5", 1024);
+    filtering(sInputFilePath, sOutputFilePath, sFilterType, "0.02", "0.01", "0.5", 1024);
 
     //open and check output
     phOutput->create(phOutput);
@@ -386,11 +390,11 @@ void test5(std::string sFilterType)
     float** ppfInput = 0;
     float** ppfOutput = 0;
 
-    std::string sInputFilePath = "C:/Users/sophi/Documents/GATECH/MUSI6106/2020-MUSI6106/samp2_sawtooth.wav";
-    std::string sOutputFilePath = "C:/Users/sophi/Documents/GATECH/MUSI6106/2020-MUSI6106/samp2_sawtoothProc.wav";
+    std::string sInputFilePath = "./samp2_sawtooth.wav";
+    std::string sOutputFilePath = "./samp2_sawtoothProc5.wav";
 
     //create a processed output file with sFilterType comb and 1024 block size
-    filtering(sInputFilePath, sOutputFilePath, sFilterType, "0", "0.5", 1024);
+    filtering(sInputFilePath, sOutputFilePath, sFilterType, "0.01", "0", "0.5", 1024);
 
     //open and compare input/output
     phInput->create(phInput);
