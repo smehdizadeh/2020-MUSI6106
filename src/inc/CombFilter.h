@@ -14,8 +14,8 @@ private:
     CCombFilter(const CCombFilter& that);
     Error_t freeMemory() override;
     Error_t allocMemory() override;
-    Error_t processFIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames) override;
-    Error_t processIIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames) override;
+    Error_t processFIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames, int iDelay) override;
+    Error_t processIIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames, int iDelay) override;
 
     float  **m_piDelayLine;           //!< delay line
 };

@@ -63,22 +63,22 @@ Error_t CCombFilter::allocMemory()
         return kNoError;
 }
 
-Error_t CCombFilter::processFIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames)
+Error_t CCombFilter::processFIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames, int iDelay)
 {
     int iNumChannels = getNumChannels();
     float g = getParam(CCombFilterIf::FilterParam_t::kParamGain);
-
+    
     // sanity check
     assert(ppfInputBuffer || ppfInputBuffer[0]);
 
     //if delay is zero
-    if (m_kiDelayLineLength == 0)
+    if ( iDelay == 0)
     {
         for (int iCh = 0; iCh < iNumChannels; iCh++)
         {
             for (int i = 0; i < iNumberOfFrames; i++)
             {
-                ppfOutputBuffer[iCh][i] = ppfInputBuffer[iCh][i]; //copy input to output
+                ppfOutputBuffer[iCh][i] = ppfInputBuffer[iCh][i] * (1 + g); //no delay line
             }
         }
     }
@@ -88,8 +88,8 @@ Error_t CCombFilter::processFIRIntern(float** ppfInputBuffer, float** ppfOutputB
         {
             for (int i = 0; i < iNumberOfFrames; i++)
             {
-                ppfOutputBuffer[iCh][i] = ppfInputBuffer[iCh][i] + (g * m_piDelayLine[iCh][m_kiDelayLineLength - 1]);
-                shiftDelayLine(m_piDelayLine[iCh], m_kiDelayLineLength, ppfInputBuffer[iCh][i]);
+                ppfOutputBuffer[iCh][i] = ppfInputBuffer[iCh][i] + (g * m_piDelayLine[iCh][iDelay - 1]);
+                shiftDelayLine(m_piDelayLine[iCh], iDelay, ppfInputBuffer[iCh][i]);
             }
         }
     }
@@ -97,7 +97,7 @@ Error_t CCombFilter::processFIRIntern(float** ppfInputBuffer, float** ppfOutputB
     return kNoError;
 }
 
-Error_t CCombFilter::processIIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames)
+Error_t CCombFilter::processIIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames, int iDelay)
 {
     int iNumChannels = getNumChannels();
     float g = getParam(CCombFilterIf::FilterParam_t::kParamGain);
@@ -106,13 +106,13 @@ Error_t CCombFilter::processIIRIntern(float** ppfInputBuffer, float** ppfOutputB
     assert(ppfInputBuffer || ppfInputBuffer[0]);
 
     //if delay is zero
-    if (m_kiDelayLineLength == 0)
+    if (iDelay == 0)
     {
         for (int iCh = 0; iCh < iNumChannels; iCh++)
         {
             for (int i = 0; i < iNumberOfFrames; i++)
             {
-                ppfOutputBuffer[iCh][i] = ppfInputBuffer[iCh][i]; //copy input to output
+                ppfOutputBuffer[iCh][i] = ppfInputBuffer[iCh][i] / (1.0 - g); //no delay line
             }
         }
     }
@@ -122,8 +122,8 @@ Error_t CCombFilter::processIIRIntern(float** ppfInputBuffer, float** ppfOutputB
         {
             for (int i = 0; i < iNumberOfFrames; i++)
             {
-                ppfOutputBuffer[iCh][i] = ppfInputBuffer[iCh][i] + (g * m_piDelayLine[iCh][m_kiDelayLineLength - 1]);
-                shiftDelayLine(m_piDelayLine[iCh], m_kiDelayLineLength, ppfOutputBuffer[iCh][i]);
+                ppfOutputBuffer[iCh][i] = ppfInputBuffer[iCh][i] + (g * m_piDelayLine[iCh][iDelay - 1]);
+                shiftDelayLine(m_piDelayLine[iCh], iDelay, ppfOutputBuffer[iCh][i]);
             }
         }
     }

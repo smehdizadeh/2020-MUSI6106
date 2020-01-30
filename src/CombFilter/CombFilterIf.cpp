@@ -87,8 +87,9 @@ Error_t CCombFilterIf::init( CombFilterType_t eFilterType, float fMaxDelayLength
     m_fFilterGain = 1;
     m_iNumChannels = iNumChannels;
     m_kiDelayLineLength = fMaxDelayLengthInS * fSampleRateInHz;
+    m_iDelaySamp = m_kiDelayLineLength;
 
-    setParam(FilterParam_t::kParamDelay, fMaxDelayLengthInS);
+    //setParam(FilterParam_t::kParamDelay, fMaxDelayLengthInS);
 
     m_bIsInitialized = true;
 
@@ -102,10 +103,13 @@ Error_t CCombFilterIf::reset ()
 
     //reset internal variables
     m_fSampleRate = 0;
-    m_fFilterGain = 1;
+    m_fFilterGain = 0;
     m_iNumChannels = 0;
+    m_iDelaySamp = 0;
     m_kiDelayLineLength = 0;
     setParam(FilterParam_t::kParamDelay, 0);
+    setParam(FilterParam_t::kParamGain, 0);
+
 
     return freeMemory(); //free delay line memory
 }
@@ -122,9 +126,9 @@ Error_t CCombFilterIf::process( float **ppfInputBuffer, float **ppfOutputBuffer,
 
     //check filter type
     if (m_eFilterType == CCombFilterIf::CombFilterType_t::kCombFIR) //FIR filter implementation
-        return processFIRIntern(ppfInputBuffer, ppfOutputBuffer, iNumberOfFrames);
+        return processFIRIntern(ppfInputBuffer, ppfOutputBuffer, iNumberOfFrames, m_iDelaySamp);
     else if (m_eFilterType == CCombFilterIf::CombFilterType_t::kCombIIR) //IIR filter implementation
-        return processIIRIntern(ppfInputBuffer, ppfOutputBuffer, iNumberOfFrames);
+        return processIIRIntern(ppfInputBuffer, ppfOutputBuffer, iNumberOfFrames, m_iDelaySamp);
     else
         return kFunctionInvalidArgsError; //if m_eFilterType is not FIR or IIR as specified above, return invalid
 }
@@ -140,7 +144,7 @@ Error_t CCombFilterIf::setParam( FilterParam_t eParam, float fParamValue )
     {
         if (fParamValue < 0)
             return kFunctionInvalidArgsError;
-        else m_kiDelayLineLength = fParamValue * m_fSampleRate;
+        else m_iDelaySamp = fParamValue * m_fSampleRate;
     }
 
     if (eParam == FilterParam_t::kParamGain)
@@ -161,7 +165,7 @@ float CCombFilterIf::getParam( FilterParam_t eParam ) const
 
     //find parameter
     if (eParam == FilterParam_t::kParamDelay) //delay parameter
-        return (m_kiDelayLineLength / m_fSampleRate);
+        return (m_iDelaySamp / m_fSampleRate);
 
     else if (eParam == FilterParam_t::kParamGain) //gain parameter
         return m_fFilterGain;

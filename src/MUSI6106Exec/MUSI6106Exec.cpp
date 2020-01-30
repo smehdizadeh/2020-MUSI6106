@@ -13,6 +13,8 @@ using std::endl;
 // local function declarations
 int     filtering(std::string sInputFilePath, std::string sOutputFilePath, std::string sFilterType, std::string sMaxDelayLengthInS, std::string sDelayTime, std::string sFilterGain, int numBlocks);
 void    showClInfo();
+void    test1();
+void    test2();
 void    test3(std::string sFilterType);
 void    test4(std::string sFilterType);
 void    test5(std::string sFilterType);
@@ -41,10 +43,16 @@ int main(int argc, char* argv[])
         //call test cases
         cout << "Running test cases..." << endl;
 
+        test1();
+        cout << endl;
+        test2();
+        cout << endl;
         test3("FIR");
         test3("IIR");
+        cout << endl;
         test4("FIR");
         test4("IIR");
+        cout << endl;
         test5("FIR");
         test5("IIR");
         
@@ -131,6 +139,19 @@ int filtering(std::string sInputFilePath, std::string sOutputFilePath, std::stri
     fMaxDelayLengthInS = std::stof(sMaxDelayLengthInS);
     fFilterGain = std::stof(sFilterGain);
 
+    if (fMaxDelayLengthInS < fDelayTime) //check for potential delay buffer issues
+    {
+        cout << "Init error: <max delay in sec> must be longer than <delay time in sec>" << endl;
+        return -1;
+    }
+
+    if ((stFilterType == CCombFilterIf::CombFilterType_t::kCombIIR) && (fFilterGain == 1) && (fDelayTime == 0)) //check for potential divide by zero error in IIR
+    {
+        cout << "Invalid params for IIR filter" << endl;
+        cout << "Delay cannot be 0 while gain is 1" << endl;
+        return -1;
+    }
+
     //initialize filter
     combFilter->init(stFilterType, fMaxDelayLengthInS, stFileSpec.fSampleRateInHz, stFileSpec.iNumChannels);
     combFilter->setParam(CCombFilterIf::FilterParam_t::kParamDelay, fDelayTime);
@@ -201,6 +222,168 @@ void     showClInfo()
     cout << "GTCMT MUSI6106 Executable" << endl;
     cout << "(c) 2014-2020 by Alexander Lerch" << endl;
     cout << endl;
+
+    return;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+/*! test #1
+\ FIR: output is zero if input freq matches feedforward
+\ Delay = 0, Gain = -1
+*/
+void    test1()
+{
+    cout << "Running test 1..." << endl;
+
+    CAudioFileIf* phOutput = 0;
+    CAudioFileIf::FileSpec_t stFileSpec;
+
+    float** ppfOutput = 0;
+
+    std::string sInputFilePath = "./samp2_sawtooth.wav";
+    std::string sOutputFilePath = "./samp2_sawtoothProc1.wav";
+
+    //create a processed output file with FIR comb and 1024 block size
+    filtering(sInputFilePath, sOutputFilePath, "FIR", "0.1", "0", "-1", 1024);
+
+    //open and check output
+    phOutput->create(phOutput);
+    phOutput->openFile(sOutputFilePath, CAudioFileIf::kFileRead);
+    if (!phOutput->isOpen()) //check
+    {
+        cout << "Test 1 - Input file open error!";
+        return;
+    }
+    phOutput->getFileSpec(stFileSpec); //get file specs
+
+    ppfOutput = new float* [stFileSpec.iNumChannels];
+    for (int i = 0; i < stFileSpec.iNumChannels; i++) //for each channel of audio in the file
+    {
+        ppfOutput[i] = new float[1024]; //allocate array of 1024 (arbitrary)
+    }
+
+    while (!phOutput->isEof()) //until end of input file is reached
+    {
+        long long iNumFrames = 1024; //number of frames to read at a time
+        //read in 1024 frames
+        //store in ppfOutput
+        phOutput->readData(ppfOutput, iNumFrames);
+
+        for (int c = 0; c < stFileSpec.iNumChannels; c++) //compare the two arrays
+        {
+            for (int i = 0; i < iNumFrames; i++)
+            {
+                if (ppfOutput[c][i] != 0) //check if output is zero
+                {
+                    cout << "Test 1 - FAILED" << endl;
+                    return;
+                }
+            }
+        }
+    }
+    cout << "Test 1 - PASSED" << endl;
+
+    //clean up
+    phOutput->closeFile();
+    CAudioFileIf::destroy(phOutput);
+
+    for (int i = 0; i < stFileSpec.iNumChannels; i++) //for each audio channel array
+    {
+        delete[] ppfOutput[i]; //free memory associated with that channel
+    }
+
+    delete[] ppfOutput; //delete pointer arrays
+
+    ppfOutput = 0; //reset to NULL 
+
+    return;
+
+}
+
+//////////////////////////////////////////////////////////////////////////////
+/*! test #2
+\ IIR: input magnitude is scaled by a factor of 1/(1-g) if input freq matches feedback
+*/
+void    test2()
+{
+    cout << "Running test 2..." << endl;
+
+    CAudioFileIf* phInput = 0;
+    CAudioFileIf* phOutput = 0;
+    CAudioFileIf::FileSpec_t stFileSpec;
+
+    float** ppfInput = 0;
+    float** ppfOutput = 0;
+
+    std::string sInputFilePath = "./samp2_sawtooth.wav";
+    std::string sOutputFilePath = "./samp2_sawtoothProc2.wav";
+
+    //create a processed output file with IIR comb and 1024 block size
+    filtering(sInputFilePath, sOutputFilePath, "IIR", "0.1", "0", "-1", 1024);
+
+    //open and both files
+    phInput->create(phInput);
+    phOutput->create(phOutput);
+
+    phInput->openFile(sInputFilePath, CAudioFileIf::kFileRead);
+    phOutput->openFile(sOutputFilePath, CAudioFileIf::kFileRead);
+    if (!phInput->isOpen() || !phOutput->isOpen()) //check
+    {
+        cout << "Test 2 - File open error!";
+        return;
+    }
+    phInput->getFileSpec(stFileSpec); //get file specs
+
+    //allocate memory
+    ppfInput = new float* [stFileSpec.iNumChannels];
+    ppfOutput = new float* [stFileSpec.iNumChannels];
+    for (int i = 0; i < stFileSpec.iNumChannels; i++) //for each channel of audio in the file
+    {
+        ppfInput[i] = new float[1024]; //allocate array of 1024 (arbitrary)
+        ppfOutput[i] = new float[1024]; 
+    }
+
+    //check that output is just the input scaled by a factor of 1/(1-g) -> 1/2
+    while (!phInput->isEof() || !phOutput->isEof()) //until end of file is reached
+    {
+        long long iNumFrames = 1024; //number of frames to read at a time
+        //read in 1024 frames
+        //store in ppfInput/Output
+        phInput->readData(ppfInput, iNumFrames);
+        phOutput->readData(ppfOutput, iNumFrames);
+
+        for (int c = 0; c < stFileSpec.iNumChannels; c++) //compare the two arrays
+        {
+            for (int i = 0; i < iNumFrames; i++)
+            {
+                if ((ppfOutput[c][i] - (0.5 * ppfInput[c][i])) > 0.001 || (ppfOutput[c][i] - (0.5 * ppfInput[c][i])) < -0.001) //check if output is scaled properly - account for error b/c write function is only 16 bit
+                {
+                    cout << "Test 2 - FAILED" << endl;
+                    cout << "Output " << ppfOutput[c][i] << " Input " << ppfInput[c][i] << endl;
+                    return;
+                }
+            }
+        }
+    }
+    cout << "Test 2 - PASSED" << endl;
+
+    //clean up
+    phInput->closeFile();
+    phOutput->closeFile();
+    CAudioFileIf::destroy(phInput);
+    CAudioFileIf::destroy(phOutput);
+
+    for (int i = 0; i < stFileSpec.iNumChannels; i++) //for each audio channel array
+    {
+        delete[] ppfInput[i]; //free memory associated with that channel
+        delete[] ppfOutput[i]; 
+    }
+
+    delete[] ppfInput; //delete pointer arrays
+    delete[] ppfOutput; 
+
+    ppfInput = 0; //reset to NULL 
+    ppfOutput = 0; 
 
     return;
 }
@@ -340,7 +523,7 @@ void     test4(std::string sFilterType)
     {
         long long iNumFrames = 1024; //number of frames to read at a time
         //read in 1024 frames
-        //store in ppfProc1/2
+        //store in ppfOutput
         phOutput->readData(ppfOutput, iNumFrames);
 
         for (int c = 0; c < stFileSpec.iNumChannels; c++) //compare the two arrays
@@ -376,7 +559,7 @@ void     test4(std::string sFilterType)
 
 //////////////////////////////////////////////////////////////////////////////
 /*! test #5
-\ FIR/IIR: correct processing for zero delay time
+\ FIR/IIR: correct processing for zero delay time, zero gain
 \ expected: input = output
 */
 
@@ -394,7 +577,7 @@ void test5(std::string sFilterType)
     std::string sOutputFilePath = "./samp2_sawtoothProc5.wav";
 
     //create a processed output file with sFilterType comb and 1024 block size
-    filtering(sInputFilePath, sOutputFilePath, sFilterType, "0.01", "0", "0.5", 1024);
+    filtering(sInputFilePath, sOutputFilePath, sFilterType, "0.01", "0", "0", 1024);
 
     //open and compare input/output
     phInput->create(phInput);

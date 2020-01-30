@@ -107,8 +107,8 @@ protected:
 private:
     CCombFilterIf(const CCombFilterIf& that);
 
-    virtual Error_t processFIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames) = 0;
-    virtual Error_t processIIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames) = 0;
+    virtual Error_t processFIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames, int iDelay) = 0;
+    virtual Error_t processIIRIntern(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumberOfFrames, int iDelay) = 0;
 
     bool            m_bIsInitialized;   //!< internal bool to check whether the init function has been called
     CombFilterType_t m_eFilterType;     //!< FIR or IIR
@@ -117,6 +117,7 @@ private:
 
     float           m_fSampleRate;      //!< audio sample rate in Hz
     float           m_fFilterGain;
+    float           m_iDelaySamp;
 };
 
 #endif // #if !defined(__CombFilterIf_hdr__)
