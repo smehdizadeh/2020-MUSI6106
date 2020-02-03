@@ -6,6 +6,7 @@
 
 #include "AudioFileIf.h"
 #include "CombFilterIf.h"
+#include "RingBuffer.h"
 
 using std::cout;
 using std::endl;
@@ -31,13 +32,16 @@ int main(int argc, char* argv[])
     CAudioFileIf::FileSpec_t stFileSpec;
 
     showClInfo();
+    void test1();
 
     //////////////////////////////////////////////////////////////////////////////
     // parse command line arguments
     if (argc < 2)
     {
-        cout << "Missing audio input path!";
-        return -1;
+        cout << "Missing audio input path!" << endl;
+        cout << "Running tests..." << endl;
+        test1();
+        return 0;
     }
     else
     {
@@ -117,3 +121,106 @@ void     showClInfo()
     return;
 }
 
+/*! RingBuffer test #1
+\ Verify initialization
+\ Basic functions - constructor, getLength, getNumValuesInBuffer(after init)
+\ get and set indeces, get() - make sure buffer init to 0, reset
+*/
+void    test1()
+{
+    //create new ring buffer, size 10, int
+    CRingBuffer<int> *pCRingBuffer = new CRingBuffer<int>(10);
+
+    if (pCRingBuffer->getLength() != 10) //sanity check, getLength()
+    {
+        cout << "test 1 - getLength FAILED" << endl;
+        return;
+    }
+
+    //should read as empty
+    if (pCRingBuffer->getNumValuesInBuffer() != 0) //sanity check, getNumValuesInBuffer()
+    {
+        cout << "test 1 - getNumValuesInBuffer FAILED" << endl;
+        return;
+    }
+
+    //try resetting
+    pCRingBuffer->reset();
+
+    //length should be the same
+    if (pCRingBuffer->getLength() != 10) //sanity check, getLength()
+    {
+        cout << "test 1 - getLength FAILED" << endl;
+        return;
+    }
+
+    //should still read as empty
+    if (pCRingBuffer->getNumValuesInBuffer() != 0) //sanity check, getNumValuesInBuffer()
+    {
+        cout << "test 1 - getNumValuesInBuffer FAILED" << endl;
+        return;
+    }
+
+    //read and write indeces should be zero
+    if (pCRingBuffer->getReadIdx() != 0 || pCRingBuffer->getWriteIdx() != 0)
+    {
+        cout << "test 1 - getReadIdx / getWriteIdx FAILED" << endl;
+        return;
+    }
+
+    //try setting indeces
+    pCRingBuffer->setReadIdx(2);
+    pCRingBuffer->setWriteIdx(7);
+    if (pCRingBuffer->getReadIdx() != 2 || pCRingBuffer->getWriteIdx() != 7)
+    {
+        cout << "test 1 - setReadIdx / setWriteIdx FAILED" << endl;
+        return;
+    }
+
+    //should read 5 values in buffer
+    if (pCRingBuffer->getNumValuesInBuffer() != 5) //sanity check, getNumValuesInBuffer()
+    {
+        cout << "test 1 - getNumValuesInBuffer after idx set FAILED" << endl;
+        return;
+    }
+
+    //reset
+    pCRingBuffer->reset();
+
+    //read and write indeces should be zero
+    if (pCRingBuffer->getReadIdx() != 0 || pCRingBuffer->getWriteIdx() != 0)
+    {
+        cout << "test 1 - getReadIdx / getWriteIdx FAILED" << endl;
+        return;
+    }
+
+    //buffer should be initialized with zeros
+    for (int i = 0; i < 10; i++)
+    {
+        if (pCRingBuffer->get(0) != 0)
+        {
+            cout << "test 1 - RingBuffer init FAILED" << endl;
+            return;
+        }
+        pCRingBuffer->setReadIdx(i + 1); //increment read index
+
+        //test i=9 case (overflow)
+        if (i == 9)
+        {
+            if (pCRingBuffer->getReadIdx() != 0) //index should overflow to 0
+            {
+                cout << "test 1 - set index overflow FAILED" << endl;
+                return;
+            }
+        }
+    }
+
+    cout << "test 1 - PASSED" << endl;
+
+    //clean up
+    pCRingBuffer->reset();
+    //pCRingBuffer->~CRingBuffer();
+    delete pCRingBuffer;
+
+    return;
+}
