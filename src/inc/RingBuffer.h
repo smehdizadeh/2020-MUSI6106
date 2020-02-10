@@ -52,7 +52,7 @@ public:
     */
     void putPostInc (const T* ptNewBuff, int iLength)
     {
-        put(&ptNewBuff, iLength); //write new values
+        put(ptNewBuff, iLength); //write new values
         m_iWriteIdx = (m_iWriteIdx + iLength) % m_iBuffLength; //move write index
 
         return;
@@ -79,13 +79,14 @@ public:
     {
         assert(m_piBuff);
 
-        int tempWrite = m_iWriteIdx; //temp write index so the real index is not incremented
+        int tempWriteIdx = m_iWriteIdx; //temp write index so the real index is not incremented
 
         for (int i = 0; i < iLength; i++) //for requested length
         {
-            tempWrite = (tempWrite + i) % m_iBuffLength;
-            ptBuff[i] = m_piBuff[tempWrite];
+            m_piBuff[tempWriteIdx] = ptNewBuff[i]; //write new value from passed buffer
+            tempWriteIdx = (tempWriteIdx +1) % m_iBuffLength; //increment temp write idx
         }
+        cout << endl;
 
         return;
     }
@@ -110,7 +111,7 @@ public:
     */
     void getPostInc (T* ptBuff, int iLength)
     {
-        get(&ptBuff, iLength); //read values
+        get(ptBuff, iLength); //read values
         m_iReadIdx = (m_iReadIdx + iLength) % m_iBuffLength; //move read index
 
         return;
@@ -137,12 +138,12 @@ public:
     {
         assert(m_piBuff);
 
-        int tempRead = m_iReadIdx; //temp read index so the real index is not incremented
+        int tempReadIdx = m_iReadIdx; //temp read index so the real index is not incremented
 
         for (int i = 0; i < iLength; i++) //for requested length
         {
-            tempRead = (tempRead + i) % m_iBuffLength;
-            ptBuff[i] = m_piBuff[tempRead];
+            ptBuff[i] = m_piBuff[tempReadIdx];
+            tempReadIdx = (tempReadIdx+1) % m_iBuffLength;
         }
         
         return;
