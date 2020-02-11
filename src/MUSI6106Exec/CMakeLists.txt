@@ -1,6 +1,7 @@
 set (APP MUSI6106Exec)
 
 set (AudioLIB AudioFileIO)
+set (VibratoLIB Vibrato)
 #set (CombFilterLIB CombFilter)
 ## get all source files (note: this is considered bad style, one could also add file names individually)
 file(GLOB ${APP}_SOURCES RELATIVE ${CMAKE_SOURCE_DIR}/src/${APP} *.c;*.cpp;*.txt)
