@@ -21,7 +21,12 @@ public:
 		assert(!(fFreqInHz < 0) || !(fSampRateInHz < 0));
 		m_fFreq = fFreqInHz;
 		m_fSampRate = fSampRateInHz;
-		m_iTableSize = static_cast<int>(floor(m_fSampRate/m_fFreq));
+
+		//special case: MOD FREQ = 0
+		if (m_fFreq == 0)
+			m_iTableSize = 1;
+		else
+			m_iTableSize = static_cast<int>(floor(m_fSampRate/m_fFreq));
 
 		m_pfLFOBuff = new CRingBuffer<float>(m_iTableSize);
 

@@ -4,7 +4,7 @@
 #include "Vibrato.h"
 
 CVibrato::CVibrato()
-{/*
+{
 	//initialize all member variables
 	m_bIsInitialized = false;
 	m_fSampleRate = 44100;
@@ -14,11 +14,11 @@ CVibrato::CVibrato()
 	m_iDelayLineLen = 0;
 
 	m_ppfVibBuff = 0;
-	m_pCVibLFO = 0;*/
+	m_pCVibLFO = 0;
 }
 
 CVibrato::~CVibrato()
-{/*
+{
 	//clear allocated memory
 	for (int i = 0; i < m_iNumChannels; i++)
 	{
@@ -37,9 +37,9 @@ CVibrato::~CVibrato()
 	m_iDelayLineLen = 0;
 
 	m_ppfVibBuff = 0;
-	m_pCVibLFO = 0;*/
+	m_pCVibLFO = 0;
 }
-/*
+
 void CVibrato::reset()
 {
 	//clear allocated memory
@@ -79,11 +79,13 @@ Error_t CVibrato::init(float fWidthInSec, float fModFreqInHz, float fSampleRateI
 	m_iNumChannels = iNumChannels;
 
 	//initialize ring buffer (x iNumChannels) and create LFO
+	m_ppfVibBuff = new CRingBuffer<float>*[m_iNumChannels];
+	
 	for (int i = 0; i < iNumChannels; i++)
 	{
 		m_ppfVibBuff[i] = new CRingBuffer<float>(m_iDelayLineLen);
 	}
-
+	
 	m_pCVibLFO = new CLFO(m_fModFreq, m_fSampleRate);
 
 	m_bIsInitialized = true;
@@ -99,6 +101,9 @@ Error_t CVibrato::process(float** ppfInputBuffer, float** ppfOutputBuffer, int i
 
 	for (int c = 0; c < m_iNumChannels; c++)
 	{
+		m_ppfVibBuff[c]->setWriteIdx(0);
+		m_ppfVibBuff[c]->setReadIdx(-(m_iWidth+1)); //base delay
+
 		for (int i = 0; i < iNumFrames; i++)
 		{
 			fMOD = m_pCVibLFO->getLFO(i);
@@ -106,15 +111,14 @@ Error_t CVibrato::process(float** ppfInputBuffer, float** ppfOutputBuffer, int i
 			iTap = static_cast<int>(floor(fTap));
 			fFraction = fTap - iTap;
 
-			//put input at current index at the start of the ring buffer/delay line
-			m_ppfVibBuff[c]->setWriteIdx(0);
-			m_ppfVibBuff[c]->put(ppfInputBuffer[c][i]);
+			m_ppfVibBuff[c]->putPostInc(ppfInputBuffer[c][i]);
 
 			//calculate output value to write
-			m_ppfVibBuff[c]->setReadIdx(iTap);
+			//int idxStep = m_ppfVibBuff[c]->getWriteIdx();
+			m_ppfVibBuff[c]->setReadIdx(-iTap+i+1); //increment along with write idx to maintain base delay
 			ppfOutputBuffer[c][i] = m_ppfVibBuff[c]->get(fFraction);
 		}
 	}
 
 	return kNoError;
-}*/
+}

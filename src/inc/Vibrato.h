@@ -33,7 +33,7 @@ public:
 	\	destroy LFO object and ringbuffers
 	\	return Error_t
 	*/
-	//void reset();
+	void reset();
 
 	/*! initialize vibrato instance
 	\	param fWidthInSec vibrato modulation width in seconds
@@ -43,14 +43,14 @@ public:
 	\	param iBlockSize desired processing block size in samples
 	\	return Error_t
 	*/
-	//Error_t init(float fWidthInSec, float fModFreqInHz, float fSampleRateInHz, int iNumChannels);
+	Error_t init(float fWidthInSec, float fModFreqInHz, float fSampleRateInHz, int iNumChannels);
 
 	/*! process audio and apply vibrato effect
 	\	param ppfInputBuffer iNumChannels of incoming audio data (dry)
 	\	param ppfOutputBuffer iNumChannels of output audio data (wet)
 	\	param iNumFrames number of samples to be processed
 	*/
-	//Error_t process(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumFrames);
+	Error_t process(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumFrames);
 
 private:
 

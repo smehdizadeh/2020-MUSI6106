@@ -191,8 +191,7 @@ public:
     {
         if (iNewWriteIdx < 0) //negative index
         {
-            int i = 0 - iNewWriteIdx; //convert to positive number
-            i = i % m_iBuffLength; //convert to within bounds
+            int i = m_iBuffLength + iNewWriteIdx;
             m_iWriteIdx = i;
         }
         else if (iNewWriteIdx > (m_iBuffLength - 1)) //out of bounds index
@@ -221,8 +220,7 @@ public:
     {
         if (iNewReadIdx < 0) //negative index
         {
-            int i = 0 - iNewReadIdx; //convert to positive number
-            i = i % m_iBuffLength; //convert to within bounds
+            int i = m_iBuffLength + iNewReadIdx;
             m_iReadIdx = i;
         }
         else if (iNewReadIdx > (m_iBuffLength - 1)) //out of bounds index
