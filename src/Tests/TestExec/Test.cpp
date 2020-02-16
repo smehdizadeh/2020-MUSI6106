@@ -83,6 +83,7 @@ int main(int argc, char* argv[])
     }
     else
     {
+        cTestDataDir = "C:/Users/sophi/Documents/GATECH/MUSI6106/2020-MUSI6106/src/Tests/TestData";
         return UnitTest::RunAllTests();
     }
 }

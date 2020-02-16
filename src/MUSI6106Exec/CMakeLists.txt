@@ -14,7 +14,7 @@ add_inc_directories ()
 add_executable(${APP} ${${APP}_SOURCES} ${${APP}_HEADERS})
 
 # link the libraries
-target_link_libraries(${APP} ${LIB} ${TestLIB} ${CombFilterLIB} ${AudioLIB} ${SndLIB} ${OS_LIBS})
+target_link_libraries(${APP} ${LIB} ${TestLIB} ${CombFilterLIB} ${AudioLIB} ${SndLIB} ${OS_LIBS} ${VibratoLIB})
 
 if (WITH_CPPCHECKTARGET)
 	# cppcheck target in the IDE

@@ -5,7 +5,7 @@
 #include "MUSI6106Config.h"
 
 #include "AudioFileIf.h"
-//#include "CombFilterIf.h"
+#include "Vibrato.h"
 
 using std::cout;
 using std::endl;
@@ -30,8 +30,7 @@ int main(int argc, char* argv[])
     std::fstream            hOutputFile;
     CAudioFileIf::FileSpec_t stFileSpec;
 
-    //CCombFilterIf   *pInstance = 0;
-    //CCombFilterIf::create(pInstance);
+    CVibrato                *phVibrato = 0;
     showClInfo();
 
     //////////////////////////////////////////////////////////////////////////////
@@ -49,6 +48,7 @@ int main(int argc, char* argv[])
 
     //////////////////////////////////////////////////////////////////////////////
     // open the input wave file
+    phVibrato = new CVibrato();
     CAudioFileIf::create(phAudioFile);
     phAudioFile->openFile(sInputFilePath, CAudioFileIf::kFileRead);
     if (!phAudioFile->isOpen())
