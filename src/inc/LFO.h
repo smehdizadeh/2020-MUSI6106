@@ -1,3 +1,16 @@
+/*
+=============================================================================
+LFO implementation - design choices:
+
+Default constructor moved to private to avoid creating LFO object with no freq.
+Creating the object automatically populates the wavetable. Based on the input
+frequency and sample rate.
+
+Every time get is called, the read index is automatically incremented instead
+of set by the user. This is in effort to eliminate accidentally reading the
+wavetable from the beginning between blocks of audio.
+
+*/
 #if !defined(__LFO_hdr__)
 #define __LFO_hdr__
 
@@ -10,8 +23,6 @@
 #include "RingBuffer.h"
 
 /*! \wavetable LFO - float only, sinusoidal only
-	\details:
-	\default constructor moved to private to avoid creating LFO object with no freq
 */
 class CLFO
 {

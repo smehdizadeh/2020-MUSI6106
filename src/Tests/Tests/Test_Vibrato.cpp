@@ -494,45 +494,69 @@ SUITE(Vibrato)
 				CHECK_CLOSE(m_ppfOutput[c][i], tmpOutput2[c][i - 560], 1e-3);
 			}
 		}
+
+		for (int i = 0; i < m_iNumChannels; i++)
+		{
+			delete[] tmpData1[i];
+			delete[] tmpData2[i];
+			delete[] tmpOutput1[i];
+			delete[] tmpOutput2[i];;
+		}
+
+		delete[] tmpData1;
+		delete[] tmpData2;
+		delete[] tmpOutput1;
+		delete[] tmpOutput2;
 	}
 
 	//zero input -> zero output
 	TEST_FIXTURE(VibratoData, ZeroInput)
 	{
-		/*
-		RESET VIBRATO
-		*/
+		m_pCVib->reset();
 
-		//m_iWidth = 80;
 		m_fModFreq = 20.5;
+		m_fWidth = 0.02; // *44100 = 882
+		int m_iWidth = 882;
 
-		int zeroInput[m_iBlockSize];
-		for (int i = 0; i < m_iBlockSize; i++)
-			zeroInput[i] = 0;
+		float** zeroInput = new float* [m_iNumChannels];
+		for (int i = 0; i < m_iNumChannels; i++)
+		{
+			zeroInput[i] = new float[m_iBlockSize];
+		}
+		
+		for (int c = 0; c < m_iNumChannels; c++)
+		{
+			for (int i = 0; i < m_iBlockSize; i++)
+				zeroInput[c][i] = 0;
+		}
 
-		/*
-		CALL VIBRATO FUNCTIONS
-		*/
+		m_pCVib->init(m_fWidth, m_fModFreq, m_fSampRate, m_iNumChannels);
+		m_pCVib->process(zeroInput, m_ppfOutput, m_iBlockSize);
 
-		//CHECK_ARRAY_CLOSE(zeroInput, m_ppfOutput[0], m_iBlockSize, 1e-3);
+		for (int c = 0; c < m_iNumChannels; c++)
+			CHECK_ARRAY_CLOSE(zeroInput[c], m_ppfOutput[c], m_iBlockSize, 1e-3);
+
+		for (int c = 0; c < m_iNumChannels; c++)
+		{
+			delete[] zeroInput[c];
+		}
+
+		delete[] zeroInput;
 	}
 
 	//when mod width = 0, output = input
 	TEST_FIXTURE(VibratoData, ZeroModWidth)
 	{
-		/*
-		RESET VIBRATO
-		*/
+		m_pCVib->reset();
 
-		//m_iWidth = 0;
 		m_fModFreq = 5;
+		m_fWidth = 0;
 
-		/*
-		CALL VIBRATO FUNCTIONS
-		*/
+		m_pCVib->init(m_fWidth, m_fModFreq, m_fSampRate, m_iNumChannels);
+		m_pCVib->process(m_ppfAudioData, m_ppfOutput, m_iBlockSize);
 
-		//for(int i = 0; i < m_iNumChannels; i++)
-			//CHECK_ARRAY_CLOSE(m_ppfAudioData[i], m_ppfOutput[i], m_iBlockSize, 1e-3);
+		for(int i = 0; i < m_iNumChannels; i++)
+			CHECK_ARRAY_CLOSE(m_ppfAudioData[i], m_ppfOutput[i], m_iBlockSize, 1e-3);
 	}
 }
 
