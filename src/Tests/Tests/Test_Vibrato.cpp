@@ -421,9 +421,9 @@ SUITE(Vibrato)
 
 		for (int c = 0; c < m_iNumChannels; c++)
 		{
-			for (int i = 0; i < (m_iBlockSize-m_iWidth-3); i++)
+			for (int i = 0; i < (m_iBlockSize-m_iWidth-4); i++)
 			{
-				CHECK_CLOSE(DCInput[c][i], m_ppfOutput[c][i+m_iWidth+3], 1e-3); //account for modulated delay (value est. from MATLAB)
+				CHECK_CLOSE(DCInput[c][i], m_ppfOutput[c][i+m_iWidth+4], 1e-3); //account for modulated delay (value est. from MATLAB)
 			}
 		}
 

@@ -118,47 +118,23 @@ Error_t CVibrato::process(float** ppfInputBuffer, float** ppfOutputBuffer, int i
 	//analyze the same index of each channel together for consistency
 	for (int i = 0; i < iNumFrames; i++)
 	{
+		m_fMod = m_pCVibLFO->getLFO();
+		m_fTap = 1 + m_iWidth + (m_iWidth * m_fMod);
+		//m_iTap = static_cast<int>(floor(m_fTap)); //<<< how MATLAB did it.. produces non linearities??
+		//m_fFraction = m_fTap - m_iTap;
+		m_iTap = static_cast<int>(ceil(m_fTap));	//<<< new implementation... no artifacts in the audio
+		m_fFraction = abs(m_fTap - m_iTap);
+
+		m_iModStep++;
 		for (int c = 0; c < m_iNumChannels; c++)
 		{
-			m_fMod = m_pCVibLFO->getLFO();
-			m_fTap = 1 + m_iWidth + (m_iWidth * m_fMod);
-			m_iTap = static_cast<int>(floor(m_fTap));
-			m_fFraction = m_fTap - m_iTap;
-
 			m_ppfVibBuff[c]->putPostInc(ppfInputBuffer[c][i]);
 
 			//calculate output value to write
-			m_iModStep++;
 			m_ppfVibBuff[c]->setReadIdx(-m_iTap + m_iModStep); //increment along with write idx to maintain base delay
 			ppfOutputBuffer[c][i] = m_ppfVibBuff[c]->get(m_fFraction);
 		}
 	}
-	/*
-	float fTap = 0; //location on delay line
-	int iTap = 0; //index on delay line (floor fTap)
-	float fFraction = 0; //remainder of fTap - iTap ("offset" input to ringbuffer.get)
-	float fMOD = 0; //output of LFO at current index
-
-	for (int c = 0; c < m_iNumChannels; c++)
-	{
-		m_ppfVibBuff[c]->setWriteIdx(0);
-		m_ppfVibBuff[c]->setReadIdx(-(m_iWidth+1)); //base delay
-
-		for (int i = 0; i < iNumFrames; i++)
-		{
-			fMOD = m_pCVibLFO->getLFO(i);
-			fTap = 1 + m_iWidth + (m_iWidth * fMOD);
-			iTap = static_cast<int>(floor(fTap));
-			fFraction = fTap - iTap;
-
-			m_ppfVibBuff[c]->putPostInc(ppfInputBuffer[c][i]);
-
-			//calculate output value to write
-			m_ppfVibBuff[c]->setReadIdx(-iTap+i+1); //increment along with write idx to maintain base delay
-			ppfOutputBuffer[c][i] = m_ppfVibBuff[c]->get(fFraction);
-		}
-	}
-	*/
 
 	return kNoError;
 }
