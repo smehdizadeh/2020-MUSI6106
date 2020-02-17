@@ -132,7 +132,7 @@ public:
         }
         else
         {
-            return static_cast<T>((m_piBuff[m_iReadIdx + 1] * fOffset) + (m_piBuff[m_iReadIdx] * (1 - fOffset)));
+            return static_cast<T>((m_piBuff[(m_iReadIdx + 1)%m_iBuffLength] * fOffset) + (m_piBuff[m_iReadIdx] * (1 - fOffset)));
         }
     }
 

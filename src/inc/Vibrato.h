@@ -64,6 +64,12 @@ private:
 
 	CRingBuffer<float>** m_ppfVibBuff;	//!< pointer to Ring Buffers for vibrato fractional delay
 	CLFO* m_pCVibLFO;					//!< LFO for vibrato modulation
+
+	float m_fTap;					//!< processing: location on delay line
+	int m_iTap;						//!< processing: index on delay line
+	float m_fFraction;				//!< processing: remainder fTap - iTap
+	float m_fMod;					//!< processing: output of LFO at current idx
+	int m_iModStep;					//!< processing: increment step for moving read idx
 };
 
 #endif // __Vibrato_hdr__

@@ -15,6 +15,12 @@ CVibrato::CVibrato()
 
 	m_ppfVibBuff = 0;
 	m_pCVibLFO = 0;
+
+	m_fTap = 0;
+	m_iTap = 0;
+	m_fFraction = 0;
+	m_fMod = 0;
+	m_iModStep = 0;
 }
 
 CVibrato::~CVibrato()
@@ -38,6 +44,12 @@ CVibrato::~CVibrato()
 
 	m_ppfVibBuff = 0;
 	m_pCVibLFO = 0;
+
+	m_fTap = 0;
+	m_iTap = 0;
+	m_fFraction = 0;
+	m_fMod = 0;
+	m_iModStep = 0;
 }
 
 void CVibrato::reset()
@@ -62,6 +74,12 @@ void CVibrato::reset()
 	m_ppfVibBuff = 0;
 	m_pCVibLFO = 0;
 
+	m_fTap = 0;
+	m_iTap = 0;
+	m_fFraction = 0;
+	m_fMod = 0;
+	m_iModStep = 0;
+
 	return;
 }
 
@@ -84,6 +102,9 @@ Error_t CVibrato::init(float fWidthInSec, float fModFreqInHz, float fSampleRateI
 	for (int i = 0; i < iNumChannels; i++)
 	{
 		m_ppfVibBuff[i] = new CRingBuffer<float>(m_iDelayLineLen);
+
+		m_ppfVibBuff[i]->setWriteIdx(0);
+		m_ppfVibBuff[i]->setReadIdx(-(m_iWidth + 1)); //base delay
 	}
 	
 	m_pCVibLFO = new CLFO(m_fModFreq, m_fSampleRate);
@@ -94,6 +115,25 @@ Error_t CVibrato::init(float fWidthInSec, float fModFreqInHz, float fSampleRateI
 
 Error_t CVibrato::process(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumFrames)
 {
+	//analyze the same index of each channel together for consistency
+	for (int i = 0; i < iNumFrames; i++)
+	{
+		for (int c = 0; c < m_iNumChannels; c++)
+		{
+			m_fMod = m_pCVibLFO->getLFO();
+			m_fTap = 1 + m_iWidth + (m_iWidth * m_fMod);
+			m_iTap = static_cast<int>(floor(m_fTap));
+			m_fFraction = m_fTap - m_iTap;
+
+			m_ppfVibBuff[c]->putPostInc(ppfInputBuffer[c][i]);
+
+			//calculate output value to write
+			m_iModStep++;
+			m_ppfVibBuff[c]->setReadIdx(-m_iTap + m_iModStep); //increment along with write idx to maintain base delay
+			ppfOutputBuffer[c][i] = m_ppfVibBuff[c]->get(m_fFraction);
+		}
+	}
+	/*
 	float fTap = 0; //location on delay line
 	int iTap = 0; //index on delay line (floor fTap)
 	float fFraction = 0; //remainder of fTap - iTap ("offset" input to ringbuffer.get)
@@ -114,11 +154,11 @@ Error_t CVibrato::process(float** ppfInputBuffer, float** ppfOutputBuffer, int i
 			m_ppfVibBuff[c]->putPostInc(ppfInputBuffer[c][i]);
 
 			//calculate output value to write
-			//int idxStep = m_ppfVibBuff[c]->getWriteIdx();
 			m_ppfVibBuff[c]->setReadIdx(-iTap+i+1); //increment along with write idx to maintain base delay
 			ppfOutputBuffer[c][i] = m_ppfVibBuff[c]->get(fFraction);
 		}
 	}
+	*/
 
 	return kNoError;
 }

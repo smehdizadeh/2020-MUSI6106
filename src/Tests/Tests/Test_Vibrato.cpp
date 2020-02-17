@@ -343,13 +343,13 @@ SUITE(Vibrato)
 			delete[] m_ppfOutput;
 		}
 
-		void writeTXT(std::string sLabel, float** dataArray)
+		void writeTXT(std::string sLabel, float** dataArray, int iNumFrames)
 		{
 			std::fstream hOutputFile;
 			std::string sOutputFilePath = cTestDataDir + "/test" + sLabel + ".txt";
 			hOutputFile.open(sOutputFilePath.c_str(), std::ios::out);
 
-			for (int i = 0; i < m_iBlockSize; i++)
+			for (int i = 0; i < iNumFrames; i++)
 			{
 				for (int c = 0; c < m_iNumChannels; c++)
 				{
@@ -395,58 +395,105 @@ SUITE(Vibrato)
 		}
 	}
 
-	//if DC input, param have no effect on output
+	//DC input -> DC output + delay
 	TEST_FIXTURE(VibratoData, DCInput)
 	{
-		/*
-		RESET VIBRATO
-		*/
+		m_pCVib->reset();
 
-		//m_iWidth = 40;
 		m_fModFreq = 11;
+		m_fWidth = 0.001; // *44100 = 44.1 ~44
+		int m_iWidth = 44;
 
-		int DCInput[m_iBlockSize];
-		for (int i = 0; i < m_iBlockSize; i++)
-			DCInput[i] = 7;
+		float** DCInput = new float*[m_iNumChannels];
+		for (int i = 0; i < m_iNumChannels; i++)
+		{
+			DCInput[i] = new float[m_iBlockSize];
+		}
 
-		/*
-		CALL VIBRATO FUNCTIONS
-		*/
+		for (int c = 0; c < m_iNumChannels; c++)
+		{
+			for (int i = 0; i < m_iBlockSize; i++)
+				DCInput[c][i] = 7;
+		}
 
-		//CHECK_ARRAY_CLOSE(DCInput, m_ppfOutput[0], m_iBlockSize, 1e-3);
+		m_pCVib->init(m_fWidth, m_fModFreq, m_fSampRate, m_iNumChannels);
+		m_pCVib->process(DCInput, m_ppfOutput, m_iBlockSize);
+
+		for (int c = 0; c < m_iNumChannels; c++)
+		{
+			for (int i = 0; i < (m_iBlockSize-m_iWidth-3); i++)
+			{
+				CHECK_CLOSE(DCInput[c][i], m_ppfOutput[c][i+m_iWidth+3], 1e-3); //account for modulated delay (value est. from MATLAB)
+			}
+		}
+
+		delete[] DCInput[0];
+		delete[] DCInput;
 	}
 
 	//test with varying block sizes
 	TEST_FIXTURE(VibratoData, VaryBlockSize)
 	{
-		/*
-		RESET VIBRATO
-		*/
+		m_pCVib->reset();
 
-		//m_iWidth = 40;
 		m_fModFreq = 10;
-		int tmpBlk = 560;
-		float tmpBuff[m_iNumChannels][m_iBlockSize];
+		m_fWidth = 0.01; // *44100 = 441
+		int m_iWidth = 441;
 
-		/*
-		CALL VIBRATO FUNCTIONS
-		FIRST WITH STANDARD BLOCK SIZE
-		*/
+		float** tmpData1 = new float*[m_iNumChannels];
+		float** tmpData2 = new float*[m_iNumChannels];
+		float** tmpOutput1 = new float* [m_iNumChannels];
+		float** tmpOutput2 = new float* [m_iNumChannels];
 
-		/*
-		RESET VIBRATO
-		*/
+		for (int i = 0; i < m_iNumChannels; i++)
+		{
+			tmpData1[i] = new float[560];
+			tmpData2[i] = new float[m_iBlockSize - 560];
+			tmpOutput1[i] = new float[560];
+			tmpOutput2[i] = new float[m_iBlockSize - 560];
+		}
 
-		//m_iWidth = 40;
-		m_fModFreq = 10;
+		//split audio data into two arrays, one of size 560 and one of size 440
+		for (int c = 0; c < m_iNumChannels; c++)
+		{
+			for (int i = 0; i < 560; i++)
+			{
+				tmpData1[c][i] = m_ppfAudioData[c][i];
+			}
 
-		/*
-		CALL VIBRATO FUNCTIONS
-		WITH SECOND BLOCK SIZE
-		*/
+			for (int i = 560; i < m_iBlockSize; i++)
+			{
+				tmpData2[c][i-560] = m_ppfAudioData[c][i];
+			}
+		}
 
-		//for (int i = 0; i < m_iNumChannels; i++)
-			//CHECK_ARRAY_CLOSE(m_ppfOutput[i], tmpBuff[i], m_iBlockSize, 1e-3);
+		m_pCVib->init(m_fWidth, m_fModFreq, m_fSampRate, m_iNumChannels);
+		m_pCVib->process(m_ppfAudioData, m_ppfOutput, m_iBlockSize); //normal block size
+
+		m_pCVib->reset();
+
+		m_pCVib->init(m_fWidth, m_fModFreq, m_fSampRate, m_iNumChannels);
+		m_pCVib->process(tmpData1, tmpOutput1, 560); //second block size
+		m_pCVib->process(tmpData2, tmpOutput2, (m_iBlockSize - 560));
+
+		writeTXT("out1", tmpOutput1, 560);
+		writeTXT("out2", tmpOutput2, 440);
+		writeTXT("expected", m_ppfOutput, m_iBlockSize);
+
+		for (int c = 0; c < m_iNumChannels; c++)
+		{
+			for (int i = 0; i < 560; i++)
+			{
+				CHECK_CLOSE(m_ppfAudioData[c][i], tmpData1[c][i], 1e-3); //check split inputs
+				CHECK_CLOSE(m_ppfOutput[c][i], tmpOutput1[c][i], 1e-3); //check split outputs
+			}
+
+			for (int i = 560; i < m_iBlockSize; i++)
+			{
+				CHECK_CLOSE(m_ppfAudioData[c][i], tmpData2[c][i - 560], 1e-3);
+				CHECK_CLOSE(m_ppfOutput[c][i], tmpOutput2[c][i - 560], 1e-3);
+			}
+		}
 	}
 
 	//zero input -> zero output
@@ -541,7 +588,7 @@ SUITE(LFO)
 
 		for (int i = 0; i < m_iBuffSize; i++)
 		{
-			m_pfLFOOutput[i] = testLFO->getLFO(i);
+			m_pfLFOOutput[i] = testLFO->getLFO();
 		}
 
 		CHECK_ARRAY_CLOSE(m_pfExpected, m_pfLFOOutput, m_iBuffSize, 1e-3);
@@ -553,7 +600,7 @@ SUITE(LFO)
 
 		for (int i = 0; i < 2*m_iBuffSize; i++)
 		{
-			m_pfLFOOutputLong[i] = testLFO->getLFO(i);
+			m_pfLFOOutputLong[i] = testLFO->getLFO();
 		}
 
 		CHECK_ARRAY_CLOSE(m_pfExpectedLong, m_pfLFOOutputLong, 2*m_iBuffSize, 1e-3);

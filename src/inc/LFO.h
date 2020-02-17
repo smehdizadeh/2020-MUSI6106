@@ -42,10 +42,9 @@ public:
 	/*! look up wavetable value at index
 	\	return value as a const
 	*/
-	const float getLFO(int index)
+	const float getLFO()
 	{
-		m_pfLFOBuff->setReadIdx(index);
-		return(m_pfLFOBuff->get());
+		return(m_pfLFOBuff->getPostInc());
 	}
 
 private:
