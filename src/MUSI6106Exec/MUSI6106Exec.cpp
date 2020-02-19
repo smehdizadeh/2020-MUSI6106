@@ -81,9 +81,14 @@ int main(int argc, char* argv[])
     // create and init vibrato
     phVibrato = new CVibrato();
     Error_t initErr = phVibrato->init(fModWidthInSec, fModFreqInHz, stFileSpec.fSampleRateInHz, stFileSpec.iNumChannels);
-    if (initErr != kNoError)
+    if (initErr == kFunctionInvalidArgsError)
     {
         cout << "Vibrato effect initialization error -- invalid parameters";
+        return -1;
+    }
+    else if (initErr == kFunctionIllegalCallError)
+    {
+        cout << "Vibrato effect initialization error -- please reset before re-initializing";
         return -1;
     }
 
@@ -100,15 +105,19 @@ int main(int argc, char* argv[])
     time = clock();
     //////////////////////////////////////////////////////////////////////////////
     // get audio data and write it to the output file
-    int i = 0;
     while (!phAudioInputFile->isEof())
     {
         long long iNumFrames = kBlockSize;
         phAudioInputFile->readData(ppfAudioInputData, iNumFrames);
 
         cout << "\r" << "reading and writing";
-        i = i + iNumFrames;
-        phVibrato->process(ppfAudioInputData, ppfAudioOutputData, iNumFrames);
+
+        Error_t procErr = phVibrato->process(ppfAudioInputData, ppfAudioOutputData, iNumFrames);
+        if (procErr != kNoError)
+        {
+            cout << "Vibrato effect processing error -- please initialize";
+            return -1;
+        }
 
         phAudioOutputFile->writeData(ppfAudioOutputData, iNumFrames);
     }

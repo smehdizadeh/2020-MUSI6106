@@ -558,6 +558,53 @@ SUITE(Vibrato)
 		for(int i = 0; i < m_iNumChannels; i++)
 			CHECK_ARRAY_CLOSE(m_ppfAudioData[i], m_ppfOutput[i], m_iBlockSize, 1e-3);
 	}
+
+	//multichannel vibrato test
+	TEST_FIXTURE(VibratoData, MultiChannel)
+	{
+		m_pCVib->reset();
+
+		m_fModFreq = 7;
+		m_fWidth = 0.002; // *44100 = 88.2 ~88
+		int m_iWidth = 88;
+		int numChan = 3;
+
+		//create input signal of identical 3 channel sine wave
+		float** multiChanSine = new float* [numChan];
+		float** multiChanOutput = new float* [numChan];
+		for (int i = 0; i < numChan; i++)
+		{
+			multiChanSine[i] = new float[m_iBlockSize];
+			multiChanOutput[i] = new float[m_iBlockSize];
+
+			CSynthesis::generateSine(multiChanSine[i], 440.F, 44100.F, m_iBlockSize);
+		}
+		
+		//multichannel case
+		m_pCVib->init(m_fWidth, m_fModFreq, m_fSampRate, numChan);
+		m_pCVib->process(multiChanSine, multiChanOutput, m_iBlockSize);
+
+		//mono case
+		m_pCVib->reset();
+		m_pCVib->init(m_fWidth, m_fModFreq, m_fSampRate, m_iNumChannels);
+		m_pCVib->process(m_ppfAudioData, m_ppfOutput, m_iBlockSize);
+
+		//each of the three channels should be the same as the single mono array
+		for (int i = 0; i < numChan; i++)
+		{
+			CHECK_ARRAY_CLOSE(m_ppfAudioData[0], multiChanSine[i], m_iBlockSize, 1e-3);
+			CHECK_ARRAY_CLOSE(m_ppfOutput[0], multiChanOutput[i], m_iBlockSize, 1e-3);
+		}
+
+		for (int i = 0; i < numChan; i++)
+		{
+			delete[] multiChanSine[i];
+			delete[] multiChanOutput[i];
+		}
+
+		delete[] multiChanSine;
+		delete[] multiChanOutput;
+	}
 }
 
 //=================================================================================================

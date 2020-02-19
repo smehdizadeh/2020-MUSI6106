@@ -88,6 +88,10 @@ Error_t CVibrato::init(float fWidthInSec, float fModFreqInHz, float fSampleRateI
 	//check user inputs
 	if (fWidthInSec < 0 || fModFreqInHz < 0 || fSampleRateInHz < 0 || !(iNumChannels > 0))
 		return kFunctionInvalidArgsError;
+
+	//you cannot call init twice in a row without resetting
+	if (m_bIsInitialized)
+		return kFunctionIllegalCallError;
 	
 	//initialize member variables
 	m_iWidth = static_cast<int>(floor(fWidthInSec * fSampleRateInHz));
@@ -115,6 +119,9 @@ Error_t CVibrato::init(float fWidthInSec, float fModFreqInHz, float fSampleRateI
 
 Error_t CVibrato::process(float** ppfInputBuffer, float** ppfOutputBuffer, int iNumFrames)
 {
+	if (!m_bIsInitialized)
+		return kNotInitializedError;
+
 	//analyze the same index of each channel together for consistency
 	for (int i = 0; i < iNumFrames; i++)
 	{
