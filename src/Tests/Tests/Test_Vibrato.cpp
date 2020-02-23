@@ -476,10 +476,6 @@ SUITE(Vibrato)
 		m_pCVib->process(tmpData1, tmpOutput1, 560); //second block size
 		m_pCVib->process(tmpData2, tmpOutput2, (m_iBlockSize - 560));
 
-		writeTXT("out1", tmpOutput1, 560);
-		writeTXT("out2", tmpOutput2, 440);
-		writeTXT("expected", m_ppfOutput, m_iBlockSize);
-
 		for (int c = 0; c < m_iNumChannels; c++)
 		{
 			for (int i = 0; i < 560; i++)

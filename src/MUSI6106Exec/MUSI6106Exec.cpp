@@ -20,22 +20,22 @@ int main(int argc, char* argv[])
     std::string             sInputFilePath,                 //!< file paths
                             sOutputFilePath;
 
-    static const int        kBlockSize = 1024;
+    static const int        kBlockSize = 1024;              //!< processing block size (samples)
 
     clock_t                 time = 0;
 
-    float                   **ppfAudioInputData = 0;
-    float                   **ppfAudioOutputData = 0;
+    float                   **ppfAudioInputData = 0;        //!< array to store input audio data
+    float                   **ppfAudioOutputData = 0;       //!< array to store output audio data
 
 
-    CAudioFileIf            *phAudioInputFile = 0;
-    CAudioFileIf            *phAudioOutputFile = 0;
+    CAudioFileIf            *phAudioInputFile = 0;          //!< input audio file object
+    CAudioFileIf            *phAudioOutputFile = 0;         //!< output audio file object
 
-    CAudioFileIf::FileSpec_t stFileSpec;
+    CAudioFileIf::FileSpec_t stFileSpec;                    //!< audio file specs object
 
-    CVibrato                *phVibrato = 0;
-    float                   fModWidthInSec = 0;
-    float                   fModFreqInHz = 0;
+    CVibrato                *phVibrato = 0;                 //!< vibrato effect object
+    float                   fModWidthInSec = 0;             //!< user specified modulation width (sec)
+    float                   fModFreqInHz = 0;               //!< user specified modulation frequency (hz)
 
     showClInfo();
 
@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
 
     time = clock();
     //////////////////////////////////////////////////////////////////////////////
-    // get audio data and write it to the output file
+    // get audio data, add vibrato, and write it to the output file
     while (!phAudioInputFile->isEof())
     {
         long long iNumFrames = kBlockSize;
@@ -128,7 +128,6 @@ int main(int argc, char* argv[])
     // clean-up
     phAudioInputFile->closeFile();
     phAudioOutputFile->closeFile();
-    phVibrato->reset();
 
     CAudioFileIf::destroy(phAudioInputFile);
     CAudioFileIf::destroy(phAudioOutputFile);
