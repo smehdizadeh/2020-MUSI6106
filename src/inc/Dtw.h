@@ -65,6 +65,15 @@ private:
 
         kNumDirections
     };
+
+    float** m_ppfCumulativeCostMatrix;
+    Directions_t** m_ppkMinCostPathMatrix;
+    int** m_ppiMinCostPathBuffer;
+    int** m_ppiMinCostPathStart;
+    int m_iMinCostPathLength;
+    float m_fMinPathCost;
+    int m_iNumRows;
+    int m_iNumCols;
 };
 
 
