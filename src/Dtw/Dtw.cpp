@@ -5,7 +5,15 @@
 
 #include "Dtw.h"
 
-CDtw::CDtw(void)
+CDtw::CDtw(void) :
+    m_fMinPathCost(-1),
+    m_iMinCostPathLength(0),
+    m_iNumCols(0),
+    m_iNumRows(0),
+    m_ppfCumulativeCostMatrix(nullptr),
+    m_ppiMinCostPathBuffer(nullptr),
+    m_ppiMinCostPathStart(nullptr),
+    m_ppkMinCostPathMatrix(nullptr)
 {
 
 }
@@ -17,9 +25,6 @@ CDtw::~CDtw(void)
 
 Error_t CDtw::init(int iNumRows, int iNumCols)
 {
-    //assert(iNumCols > 0);
-    //assert(iNumRows > 0);
-
     if (iNumCols < 1 || iNumRows < 1)
         return  kFunctionInvalidArgsError;
 
@@ -41,7 +46,7 @@ Error_t CDtw::init(int iNumRows, int iNumCols)
         m_ppiMinCostPathBuffer[i] = new int[m_iNumRows + m_iNumCols];
 
     // Set path start pointer to end of path buffer
-    m_iMinCostPathLength = -1;
+    m_iMinCostPathLength = 0;
     m_fMinPathCost = -1;
 
     return kNoError;
@@ -56,7 +61,7 @@ Error_t CDtw::reset()
         return kNotInitializedError;
 
     m_fMinPathCost = -1;
-    m_iMinCostPathLength = -1;
+    m_iMinCostPathLength = 0;
     m_iNumRows = -1;
     m_iNumCols = -1;
 
@@ -84,10 +89,7 @@ Error_t CDtw::reset()
 
 Error_t CDtw::process(float** ppfDistanceMatrix)
 {
-    assert(ppfDistanceMatrix);
     if (!ppfDistanceMatrix)
-        return kFunctionInvalidArgsError;
-    if (!**ppfDistanceMatrix)
         return kFunctionInvalidArgsError;
     if (!*ppfDistanceMatrix)
         return kNotInitializedError;
@@ -106,7 +108,7 @@ Error_t CDtw::process(float** ppfDistanceMatrix)
 
     for (int i = 1; i < m_iNumRows; i++) {
         for (int j = 1; j < m_iNumCols; j++) {
-            int min;
+            float min;
             Directions_t dir;
 
             if (m_ppfCumulativeCostMatrix[i - 1][j] < m_ppfCumulativeCostMatrix[i][j - 1]) {
@@ -141,8 +143,6 @@ Error_t CDtw::process(float** ppfDistanceMatrix)
         m_ppiMinCostPathBuffer[0][k] = i;
         m_ppiMinCostPathBuffer[1][k] = j;
 
-        //std::cout << m_ppiMinCostPathBuffer[0][k] << " " << m_ppiMinCostPathBuffer[1][k] << " " << k << std::endl;
-
         if (m_ppkMinCostPathMatrix[i][j] == kHoriz)
             --j;
         else if (m_ppkMinCostPathMatrix[i][j] == kVert)
@@ -174,15 +174,14 @@ Error_t CDtw::getPath(int** ppiPathResult) const
 {
     if (!m_ppiMinCostPathStart)
         return kNotInitializedError;
-
+    
     for (int k = 0; k < m_iMinCostPathLength; k++)
     {
         ppiPathResult[0][k] = m_ppiMinCostPathStart[0][k];
         ppiPathResult[1][k] = m_ppiMinCostPathStart[1][k];
     }
-    /*ppiPathResult = m_ppiMinCostPathStart;
-    std::cout << "***************" << std::endl;
-    std::cout << ppiPathResult[0][0] << std::endl;
-    */
+    
+    //ppiPathResult = m_ppiMinCostPathStart;
+    
     return kNoError;
 }
