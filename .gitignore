@@ -43,3 +43,8 @@ bld
 /bin
 /doc
 /lib
+
+# Juce
+/Vibrato_Plugin/Builds
+/Vibrato_Plugin/JuceLibraryCode
+/Vibrato_Plugin/.DS_Store
