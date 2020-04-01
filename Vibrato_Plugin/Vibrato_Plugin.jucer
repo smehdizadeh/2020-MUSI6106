@@ -3,6 +3,12 @@
 <JUCERPROJECT id="E68JAf" name="Vibrato_Plugin" projectType="audioplug" jucerVersion="5.4.7">
   <MAINGROUP id="PYzgXn" name="Vibrato_Plugin">
     <GROUP id="{2A3996CF-B7FD-7F97-5BFB-5E7B6E036CFD}" name="Source">
+      <FILE id="PjpT8i" name="ErrorDef.h" compile="0" resource="0" file="Source/ErrorDef.h"/>
+      <FILE id="X8wRH2" name="Fft.h" compile="0" resource="0" file="Source/Fft.h"/>
+      <FILE id="iEcuZ6" name="Lfo.h" compile="0" resource="0" file="Source/Lfo.h"/>
+      <FILE id="Eg5Hhk" name="RingBuffer.h" compile="0" resource="0" file="Source/RingBuffer.h"/>
+      <FILE id="YdmRj0" name="Synthesis.h" compile="0" resource="0" file="Source/Synthesis.h"/>
+      <FILE id="XTvwBS" name="Util.h" compile="0" resource="0" file="Source/Util.h"/>
       <FILE id="i7KZWy" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="kLY3N5" name="PluginProcessor.h" compile="0" resource="0"
@@ -10,6 +16,8 @@
       <FILE id="YWGa1s" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="Wxf1sQ" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="mHX2q4" name="Vibrato.cpp" compile="1" resource="0" file="Source/Vibrato.cpp"/>
+      <FILE id="QOBgXj" name="Vibrato.h" compile="0" resource="0" file="Source/Vibrato.h"/>
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>
