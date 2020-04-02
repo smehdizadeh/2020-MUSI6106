@@ -55,10 +55,12 @@ public:
     //==============================================================================
     void getStateInformation (MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
+    const double getSampleRate();
 
 private:
     //==============================================================================
+    CVibrato* m_pCVibrato;
+    double m_sampleRate;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Vibrato_pluginAudioProcessor)
-    
-    CVibrato * m_pCVibrato;
 };

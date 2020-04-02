@@ -24,6 +24,8 @@ Vibrato_pluginAudioProcessor::Vibrato_pluginAudioProcessor()
                        )
 #endif
 {
+    m_sampleRate = 0.f;
+    m_pCVibrato = nullptr;
 }
 
 Vibrato_pluginAudioProcessor::~Vibrato_pluginAudioProcessor()
@@ -97,6 +99,8 @@ void Vibrato_pluginAudioProcessor::prepareToPlay (double sampleRate, int samples
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+
+    m_sampleRate = sampleRate;
 }
 
 void Vibrato_pluginAudioProcessor::releaseResources()
@@ -181,6 +185,11 @@ void Vibrato_pluginAudioProcessor::setStateInformation (const void* data, int si
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+}
+
+const double Vibrato_pluginAudioProcessor::getSampleRate()
+{
+    return m_sampleRate;
 }
 
 //==============================================================================
