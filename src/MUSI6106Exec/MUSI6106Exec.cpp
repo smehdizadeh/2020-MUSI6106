@@ -1,112 +1,153 @@
-
 #include <iostream>
 #include <ctime>
 
 #include "MUSI6106Config.h"
 
 #include "AudioFileIf.h"
-//#include "CombFilterIf.h"
+#include "Vibrato.h"
 
 using std::cout;
 using std::endl;
 
 // local function declarations
-void    showClInfo ();
+void    showClInfo();
 
 /////////////////////////////////////////////////////////////////////////////////
 // main function
 int main(int argc, char* argv[])
 {
     std::string             sInputFilePath,                 //!< file paths
-                            sOutputFilePath;
+        sOutputFilePath;
 
-    static const int        kBlockSize = 1024;
+    static const int        kBlockSize = 1024;              //!< processing block size (samples)
 
     clock_t                 time = 0;
 
-    float                   **ppfAudioData = 0;
+    float** ppfAudioInputData = 0;        //!< array to store input audio data
+    float** ppfAudioOutputData = 0;       //!< array to store output audio data
 
-    CAudioFileIf            *phAudioFile = 0;
-    std::fstream            hOutputFile;
-    CAudioFileIf::FileSpec_t stFileSpec;
 
-    //CCombFilterIf   *pInstance = 0;
-    //CCombFilterIf::create(pInstance);
+    CAudioFileIf* phAudioInputFile = 0;          //!< input audio file object
+    CAudioFileIf* phAudioOutputFile = 0;         //!< output audio file object
+
+    CAudioFileIf::FileSpec_t stFileSpec;                    //!< audio file specs object
+
+    CVibrato* phVibrato = 0;                 //!< vibrato effect object
+    float                   fModWidthInSec = 0;             //!< user specified modulation width (sec)
+    float                   fModFreqInHz = 0;               //!< user specified modulation frequency (hz)
+    float                   m_fMaxModWidth = .5F;
+
     showClInfo();
 
     //////////////////////////////////////////////////////////////////////////////
     // parse command line arguments
-    if (argc < 2)
+    if (argc < 4)
     {
-        cout << "Missing audio input path!";
+        cout << "Missing argument!" << endl;
+        cout << "Please enter <input file path> <vibrato mod width in sec> <vibrato mod freq in Hz>" << endl;
         return -1;
     }
     else
     {
         sInputFilePath = argv[1];
-        sOutputFilePath = sInputFilePath + ".txt";
+        sOutputFilePath = sInputFilePath + "VibProc.wav";
+
+        fModWidthInSec = std::stof(argv[2]);
+        fModFreqInHz = std::stof(argv[3]);
     }
 
     //////////////////////////////////////////////////////////////////////////////
     // open the input wave file
-    CAudioFileIf::create(phAudioFile);
-    phAudioFile->openFile(sInputFilePath, CAudioFileIf::kFileRead);
-    if (!phAudioFile->isOpen())
+    CAudioFileIf::create(phAudioInputFile);
+    phAudioInputFile->openFile(sInputFilePath, CAudioFileIf::kFileRead);
+    if (!phAudioInputFile->isOpen())
     {
-        cout << "Wave file open error!";
+        cout << "Input file open error!";
         return -1;
     }
-    phAudioFile->getFileSpec(stFileSpec);
+    phAudioInputFile->getFileSpec(stFileSpec);
 
     //////////////////////////////////////////////////////////////////////////////
-    // open the output text file
-    hOutputFile.open(sOutputFilePath.c_str(), std::ios::out);
-    if (!hOutputFile.is_open())
+    // open the output wav file
+    CAudioFileIf::create(phAudioOutputFile);
+    phAudioOutputFile->openFile(sOutputFilePath, CAudioFileIf::kFileWrite, &stFileSpec);
+    if (!phAudioOutputFile->isOpen())
     {
-        cout << "Text file open error!";
+        cout << "Output file open error!";
         return -1;
     }
+
+    //////////////////////////////////////////////////////////////////////////////
+    // create and init vibrato
+    CVibrato::createInstance(phVibrato);
+    Error_t initErr = phVibrato->initInstance(m_fMaxModWidth, stFileSpec.fSampleRateInHz, stFileSpec.iNumChannels);
+    //    init(fModWidthInSec, fModFreqInHz, stFileSpec.fSampleRateInHz, stFileSpec.iNumChannels);
+    if (initErr == kFunctionInvalidArgsError)
+    {
+        cout << "Vibrato effect initialization error -- invalid parameters";
+        return -1;
+    }
+    else if (initErr == kFunctionIllegalCallError)
+    {
+        cout << "Vibrato effect initialization error -- please reset before re-initializing";
+        return -1;
+    }
+
+    phVibrato->setParam(CVibrato::kParamModFreqInHz, fModFreqInHz);
+    phVibrato->setParam(CVibrato::kParamModWidthInS, fModWidthInSec);
 
     //////////////////////////////////////////////////////////////////////////////
     // allocate memory
-    ppfAudioData = new float*[stFileSpec.iNumChannels];
+    ppfAudioInputData = new float* [stFileSpec.iNumChannels];
+    ppfAudioOutputData = new float* [stFileSpec.iNumChannels];
     for (int i = 0; i < stFileSpec.iNumChannels; i++)
-        ppfAudioData[i] = new float[kBlockSize];
+    {
+        ppfAudioInputData[i] = new float[kBlockSize];
+        ppfAudioOutputData[i] = new float[kBlockSize];
+    }
 
     time = clock();
     //////////////////////////////////////////////////////////////////////////////
-    // get audio data and write it to the output file
-    while (!phAudioFile->isEof())
+    // get audio data, add vibrato, and write it to the output file
+    while (!phAudioInputFile->isEof())
     {
         long long iNumFrames = kBlockSize;
-        phAudioFile->readData(ppfAudioData, iNumFrames);
+        phAudioInputFile->readData(ppfAudioInputData, iNumFrames);
 
         cout << "\r" << "reading and writing";
 
-        for (int i = 0; i < iNumFrames; i++)
+        Error_t procErr = phVibrato->process(ppfAudioInputData, ppfAudioOutputData, iNumFrames);
+        if (procErr != kNoError)
         {
-            for (int c = 0; c < stFileSpec.iNumChannels; c++)
-            {
-                hOutputFile << ppfAudioData[c][i] << "\t";
-            }
-            hOutputFile << endl;
+            cout << "Vibrato effect processing error -- please initialize";
+            return -1;
         }
+
+        phAudioOutputFile->writeData(ppfAudioOutputData, iNumFrames);
     }
 
-    cout << "\nreading/writing done in: \t" << (clock() - time)*1.F / CLOCKS_PER_SEC << " seconds." << endl;
+    cout << "\nreading/writing done in: \t" << (clock() - time) * 1.F / CLOCKS_PER_SEC << " seconds." << endl;
 
     //////////////////////////////////////////////////////////////////////////////
     // clean-up
-    CAudioFileIf::destroy(phAudioFile);
-    hOutputFile.close();
+    phAudioInputFile->closeFile();
+    phAudioOutputFile->closeFile();
+
+    CAudioFileIf::destroy(phAudioInputFile);
+    CAudioFileIf::destroy(phAudioOutputFile);
+    CVibrato::destroyInstance(phVibrato);
 
     for (int i = 0; i < stFileSpec.iNumChannels; i++)
-        delete[] ppfAudioData[i];
-    delete[] ppfAudioData;
-    ppfAudioData = 0;
+    {
+        delete[] ppfAudioInputData[i];
+        delete[] ppfAudioOutputData[i];
+    }
+    delete[] ppfAudioInputData;
+    delete[] ppfAudioOutputData;
+    ppfAudioInputData = 0;
+    ppfAudioOutputData = 0;
 
     return 0;
-
 }
 
 
@@ -114,8 +155,7 @@ void     showClInfo()
 {
     cout << "GTCMT MUSI6106 Executable" << endl;
     cout << "(c) 2014-2020 by Alexander Lerch" << endl;
-    cout  << endl;
+    cout << endl;
 
     return;
 }
-
