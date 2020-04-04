@@ -57,8 +57,9 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
     const double getSampleRate();
 
-    Error_t setParam(CVibrato::VibratoParam_t eParam, float fParamValue);
-    void toggleBypass();
+    Error_t setWidth(float fModWidthInS);
+    Error_t setFreq(float fModFreqInHz);
+    Error_t toggleBypass();
 
 private:
     //==============================================================================
@@ -72,6 +73,8 @@ private:
     bool m_bBypass;
 
     float** m_ppfAudioData;
+
+    float m_fModWidthInS;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Vibrato_pluginAudioProcessor)
 };

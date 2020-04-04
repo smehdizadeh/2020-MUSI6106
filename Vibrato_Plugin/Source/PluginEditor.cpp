@@ -24,7 +24,7 @@ Vibrato_pluginAudioProcessorEditor::Vibrato_pluginAudioProcessorEditor (Vibrato_
     modWidthLabel.setText("Modulation Width", dontSendNotification);
     modWidthLabel.attachToComponent(&modWidthSlider, true);
     modWidthSlider.setTextValueSuffix(" sec");
-    modWidthSlider.setRange(0, 0.5f); //from limits in CVibrato test suite.
+    modWidthSlider.setRange(0, 0.01f);
     modWidthSlider.setNumDecimalPlacesToDisplay(3);
     modWidthSlider.onValueChange = [this] {modWidthSliderChanged(); };
 
@@ -33,7 +33,7 @@ Vibrato_pluginAudioProcessorEditor::Vibrato_pluginAudioProcessorEditor (Vibrato_
     freqLabel.setText("Frequency", dontSendNotification);
     freqLabel.attachToComponent(&freqSlider, true);
     freqSlider.setTextValueSuffix(" Hz");
-    freqSlider.setRange(0, processor.getSampleRate() * .5F); //from limits in CVibrato initInstance()
+    freqSlider.setRange(0.2, 20.0f);
     freqSlider.setNumDecimalPlacesToDisplay(3);
     freqSlider.onValueChange = [this] {freqSliderChanged(); };
 
@@ -78,11 +78,11 @@ void Vibrato_pluginAudioProcessorEditor::bypassButtonClicked()
 /*! Function that is called when the mod width slider is adjusted */
 void Vibrato_pluginAudioProcessorEditor::modWidthSliderChanged()
 {
-    processor.setParam(CVibrato::VibratoParam_t::kParamModWidthInS, modWidthSlider.getValue());
+    processor.setWidth(modWidthSlider.getValue());
 }
 
 /*! Function that is called when the freq slider is adjusted */
 void Vibrato_pluginAudioProcessorEditor::freqSliderChanged()
 {
-    processor.setParam(CVibrato::VibratoParam_t::kParamModFreqInHz, freqSlider.getValue());
+    processor.setFreq(freqSlider.getValue());
 }

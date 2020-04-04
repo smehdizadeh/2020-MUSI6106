@@ -34,6 +34,7 @@ Vibrato_pluginAudioProcessor::Vibrato_pluginAudioProcessor()
     m_fSampleRate = 0.f;
     m_iNumberOfFrames = 0;
     m_bBypass = false;
+    m_fModWidthInS = 0.f;
 
     m_ppfAudioData = 0;
 
@@ -121,7 +122,11 @@ void Vibrato_pluginAudioProcessor::prepareToPlay (double sampleRate, int samples
     m_ppfAudioData = new float*[m_iNumChannels];
 
     for (int i = 0; i < m_iNumChannels; i++)
+    {
         m_ppfAudioData[i] = new float[m_iNumberOfFrames];
+        for (int j = 0; j < m_iNumberOfFrames; j++)
+            m_ppfAudioData[i][j] = 0.f;
+    }
 
     m_pCVibrato->initInstance(m_fMaxModWidthInS, m_fSampleRate, m_iNumChannels);
 }
@@ -188,9 +193,9 @@ void Vibrato_pluginAudioProcessor::processBlock (AudioBuffer<float>& buffer, Mid
 
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
-        if (!m_bBypass)
-            buffer.copyFrom(channel, 0, m_ppfAudioData[channel], m_iNumberOfFrames);
+        buffer.copyFrom(channel, 0, m_ppfAudioData[channel], m_iNumberOfFrames);
     }
+    
 }
 
 //==============================================================================
@@ -230,12 +235,28 @@ AudioProcessor* JUCE_CALLTYPE createPluginFilter()
     return new Vibrato_pluginAudioProcessor();
 }
 
-Error_t Vibrato_pluginAudioProcessor::setParam(CVibrato::VibratoParam_t eParam, float fParamValue)
+
+Error_t Vibrato_pluginAudioProcessor::setWidth(float fModWidthInS)
 {
-    return m_pCVibrato->setParam(eParam, fParamValue);
+    m_fModWidthInS = fModWidthInS;
+
+    if (m_bBypass)
+        return kNoError;
+
+    return m_pCVibrato->setParam(CVibrato::kParamModWidthInS, fModWidthInS);
 }
 
-void Vibrato_pluginAudioProcessor::toggleBypass()
+Error_t Vibrato_pluginAudioProcessor::setFreq(float fModFreqInHz)
+{
+    return m_pCVibrato->setParam(CVibrato::kParamModFreqInHz, fModFreqInHz);
+}
+
+Error_t Vibrato_pluginAudioProcessor::toggleBypass()
 {
     m_bBypass = !m_bBypass;
+
+    if (m_bBypass)
+        return m_pCVibrato->setParam(CVibrato::kParamModWidthInS, 0.f);
+    else
+        return m_pCVibrato->setParam(CVibrato::kParamModWidthInS, m_fModWidthInS);
 }
