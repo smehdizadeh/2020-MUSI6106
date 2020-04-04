@@ -11,6 +11,8 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+#include <math.h>
+
 //==============================================================================
 Vibrato_pluginAudioProcessor::Vibrato_pluginAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -24,12 +26,23 @@ Vibrato_pluginAudioProcessor::Vibrato_pluginAudioProcessor()
                        )
 #endif
 {
-    m_sampleRate = 0.f;
-    m_pCVibrato = nullptr;
+    // initialization for member variables.
+    m_fMaxModWidthInS = 0.5f;
+    m_iNumChannels = 0;
+
+    // empty initialization for changeable member variables.
+    m_fSampleRate = 0.f;
+    m_iNumberOfFrames = 0;
+    m_bBypass = false;
+
+    m_ppfAudioData = 0;
+
+    CVibrato::createInstance(m_pCVibrato);
 }
 
 Vibrato_pluginAudioProcessor::~Vibrato_pluginAudioProcessor()
 {
+    CVibrato::destroyInstance(m_pCVibrato);
 }
 
 //==============================================================================
@@ -100,13 +113,29 @@ void Vibrato_pluginAudioProcessor::prepareToPlay (double sampleRate, int samples
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
 
-    m_sampleRate = sampleRate;
+    m_fSampleRate = sampleRate;
+    m_iNumberOfFrames = samplesPerBlock;
+
+    m_iNumChannels = getTotalNumInputChannels();
+
+    m_ppfAudioData = new float*[m_iNumChannels];
+
+    for (int i = 0; i < m_iNumChannels; i++)
+        m_ppfAudioData[i] = new float[m_iNumberOfFrames];
+
+    m_pCVibrato->initInstance(m_fMaxModWidthInS, m_fSampleRate, m_iNumChannels);
 }
 
 void Vibrato_pluginAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
+    m_pCVibrato->resetInstance();
+
+    for (int i = 0; i < m_iNumChannels; i++)
+        delete m_ppfAudioData[i];
+
+    delete[] m_ppfAudioData;
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -154,11 +183,13 @@ void Vibrato_pluginAudioProcessor::processBlock (AudioBuffer<float>& buffer, Mid
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
+
+    m_pCVibrato->process(buffer.getArrayOfWritePointers(), m_ppfAudioData, m_iNumberOfFrames);
+
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
-        auto* channelData = buffer.getWritePointer (channel);
-
-        // ..do something to the data...
+        if (!m_bBypass)
+            buffer.copyFrom(channel, 0, m_ppfAudioData[channel], m_iNumberOfFrames);
     }
 }
 
@@ -189,7 +220,7 @@ void Vibrato_pluginAudioProcessor::setStateInformation (const void* data, int si
 
 const double Vibrato_pluginAudioProcessor::getSampleRate()
 {
-    return m_sampleRate;
+    return m_fSampleRate;
 }
 
 //==============================================================================
@@ -197,4 +228,14 @@ const double Vibrato_pluginAudioProcessor::getSampleRate()
 AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new Vibrato_pluginAudioProcessor();
+}
+
+Error_t Vibrato_pluginAudioProcessor::setParam(CVibrato::VibratoParam_t eParam, float fParamValue)
+{
+    return m_pCVibrato->setParam(eParam, fParamValue);
+}
+
+void Vibrato_pluginAudioProcessor::toggleBypass()
+{
+    m_bBypass = !m_bBypass;
 }

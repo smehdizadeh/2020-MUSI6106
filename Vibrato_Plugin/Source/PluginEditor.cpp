@@ -25,6 +25,7 @@ Vibrato_pluginAudioProcessorEditor::Vibrato_pluginAudioProcessorEditor (Vibrato_
     modWidthLabel.attachToComponent(&modWidthSlider, true);
     modWidthSlider.setTextValueSuffix(" sec");
     //need to set range... what should the max mod width be?
+    modWidthSlider.setRange(0, 0.5f); //from limits in CVibrato test suite.
     modWidthSlider.onValueChange = [this] {modWidthSliderChanged(); };
 
     addAndMakeVisible(freqSlider);
@@ -70,17 +71,17 @@ void Vibrato_pluginAudioProcessorEditor::resized()
 /*! Function that is called when the bypass button is clicked */
 void Vibrato_pluginAudioProcessorEditor::bypassButtonClicked()
 {
-
+    processor.toggleBypass();
 }
 
 /*! Function that is called when the mod width slider is adjusted */
 void Vibrato_pluginAudioProcessorEditor::modWidthSliderChanged()
 {
-
+    processor.setParam(CVibrato::VibratoParam_t::kParamModWidthInS, modWidthSlider.getValue());
 }
 
 /*! Function that is called when the freq slider is adjusted */
 void Vibrato_pluginAudioProcessorEditor::freqSliderChanged()
 {
-
+    processor.setParam(CVibrato::VibratoParam_t::kParamModFreqInHz, freqSlider.getValue());
 }
