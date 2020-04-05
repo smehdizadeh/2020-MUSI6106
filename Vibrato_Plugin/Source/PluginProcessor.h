@@ -75,6 +75,8 @@ private:
     float** m_ppfAudioData;
 
     float m_fModWidthInS;
+    float m_fTempModWidthInS;
+    SmoothedValue<float> m_rampModWidth;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Vibrato_pluginAudioProcessor)
 };
