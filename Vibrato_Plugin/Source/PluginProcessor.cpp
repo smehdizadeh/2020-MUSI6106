@@ -243,62 +243,36 @@ AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 }
 
 
-Error_t Vibrato_pluginAudioProcessor::setWidth(float fModWidthInS)
+void Vibrato_pluginAudioProcessor::setWidth(float fModWidthInS)
 {
-    if (m_bBypass)
+    if (!m_bBypass)
     {
-        m_fModWidthInS = fModWidthInS;
-        return kNoError;
-    }
-    else
-    {
-        m_rampModWidth.setCurrentAndTargetValue(0);
+        m_rampModWidth.setCurrentAndTargetValue(0.0);
         m_rampModWidth.setTargetValue(1.0);
         while (m_rampModWidth.getCurrentValue() != m_rampModWidth.getTargetValue())
         {
             m_fTempModWidthInS = ((fModWidthInS - m_fModWidthInS) * m_rampModWidth.getNextValue()) + m_fModWidthInS;
-            //m_pCVibrato->setParam(CVibrato::kParamModWidthInS, modWidth);
         }
-        m_fModWidthInS = fModWidthInS;
     }
 
-    return kNoError;
+    m_fModWidthInS = fModWidthInS;
 }
 
-Error_t Vibrato_pluginAudioProcessor::setFreq(float fModFreqInHz)
+void Vibrato_pluginAudioProcessor::setFreq(float fModFreqInHz)
 {
-    return m_pCVibrato->setParam(CVibrato::kParamModFreqInHz, fModFreqInHz);
+    m_pCVibrato->setParam(CVibrato::kParamModFreqInHz, fModFreqInHz);
 }
 
-Error_t Vibrato_pluginAudioProcessor::toggleBypass()
+void Vibrato_pluginAudioProcessor::toggleBypass()
 {
     m_bBypass = !m_bBypass;
 
-    if (m_bBypass)
-    {
-        m_rampModWidth.setCurrentAndTargetValue(1.0);
-        m_rampModWidth.setTargetValue(0);
-        while (m_rampModWidth.getCurrentValue() != m_rampModWidth.getTargetValue())
-        {
-            //std::cout << m_rampModWidth.getCurrentValue() << std::endl;
-            m_fTempModWidthInS = ((0.f - m_fModWidthInS) * m_rampModWidth.getNextValue()) + m_fModWidthInS;
-            //m_pCVibrato->setParam(CVibrato::kParamModWidthInS, modWidth);
-        }
-        //m_pCVibrato->setParam(CVibrato::kParamModWidthInS, 0.f);
-        m_fTempModWidthInS = 0.f;
-    }
-    else
-    {
-        m_rampModWidth.setCurrentAndTargetValue(0);
-        m_rampModWidth.setTargetValue(1.0);
-        while (m_rampModWidth.getCurrentValue() != m_rampModWidth.getTargetValue())
-        {
-            //std::cout << m_rampModWidth.getCurrentValue() << std::endl;
-            m_fTempModWidthInS = m_fModWidthInS * m_rampModWidth.getNextValue();
-            //m_pCVibrato->setParam(CVibrato::kParamModWidthInS, modWidth);
-        }
-        //m_pCVibrato->setParam(CVibrato::kParamModWidthInS, m_fModWidthInS);
-        m_fTempModWidthInS = m_fModWidthInS;
-    }
-    return kNoError;
+    m_rampModWidth.setCurrentAndTargetValue(1.0 - m_bBypass);
+    m_rampModWidth.setTargetValue(m_bBypass);
+
+    while (m_rampModWidth.getCurrentValue() != m_rampModWidth.getTargetValue())
+        m_fTempModWidthInS = m_fModWidthInS * m_rampModWidth.getNextValue();
+
+    m_fTempModWidthInS = m_fModWidthInS*!m_bBypass;
+ 
 }

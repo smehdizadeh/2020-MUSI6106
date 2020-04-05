@@ -57,9 +57,9 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
     const double getSampleRate();
 
-    Error_t setWidth(float fModWidthInS);
-    Error_t setFreq(float fModFreqInHz);
-    Error_t toggleBypass();
+    void setWidth(float fModWidthInS);
+    void setFreq(float fModFreqInHz);
+    void toggleBypass();
 
 private:
     //==============================================================================
