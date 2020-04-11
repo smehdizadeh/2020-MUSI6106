@@ -26,20 +26,22 @@ Vibrato_pluginAudioProcessor::Vibrato_pluginAudioProcessor()
                        )
 #endif
 {
-    // initialization for member variables.
-    m_fMaxModWidthInS = 0.5f;
-    m_iNumChannels = 0;
+    // initialization for parameter variables.
+    m_aafParamRange[CVibrato::kParamModWidthInS][0] = 0.f;
+    m_aafParamRange[CVibrato::kParamModWidthInS][1] = 0.5f;
+    m_rampModWidth.setCurrentAndTargetValue(m_aafParamRange[CVibrato::kParamModWidthInS][0]);
+    
+    m_aafParamRange[CVibrato::kParamModFreqInHz][0] = 0.2f;
+    m_aafParamRange[CVibrato::kParamModFreqInHz][1] = 20.f;
+    m_rampModFreq.setCurrentAndTargetValue(m_aafParamRange[CVibrato::kParamModFreqInHz][0]);
+    
+    m_bBypass = false;
+    m_rampBypass.setCurrentAndTargetValue(m_bBypass);
 
     // empty initialization for changeable member variables.
+    m_iNumChannels = 0;
     m_fSampleRate = 0.f;
     m_iNumberOfFrames = 0;
-    m_bBypass = false;
-    m_fModWidthInS = 0.f;
-    m_fTempModWidthInS = 0.f;
-    m_rampModWidth.setCurrentAndTargetValue(0);
-    m_rampModWidth.setTargetValue(1.0);
-
-    m_ppfAudioData = 0;
 
     CVibrato::createInstance(m_pCVibrato);
 }
@@ -123,15 +125,6 @@ void Vibrato_pluginAudioProcessor::prepareToPlay (double sampleRate, int samples
 
     m_iNumChannels = getMainBusNumInputChannels();
 
-    m_ppfAudioData = new float*[m_iNumChannels];
-
-    for (int i = 0; i < m_iNumChannels; i++)
-    {
-        m_ppfAudioData[i] = new float[m_iNumberOfFrames];
-        for (int j = 0; j < m_iNumberOfFrames; j++)
-            m_ppfAudioData[i][j] = 0.f;
-    }
-
     m_pCVibrato->initInstance(m_fMaxModWidthInS, m_fSampleRate, m_iNumChannels);
 
     m_rampModWidth.reset(m_fSampleRate, 0.005);
@@ -142,11 +135,6 @@ void Vibrato_pluginAudioProcessor::releaseResources()
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
     m_pCVibrato->resetInstance();
-
-    for (int i = 0; i < m_iNumChannels; i++)
-        delete m_ppfAudioData[i];
-
-    delete[] m_ppfAudioData;
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -195,14 +183,10 @@ void Vibrato_pluginAudioProcessor::processBlock (AudioBuffer<float>& buffer, Mid
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
 
-    m_pCVibrato->setParam(CVibrato::kParamModWidthInS, m_fTempModWidthInS);
-    m_pCVibrato->process(buffer.getArrayOfWritePointers(), m_ppfAudioData, m_iNumberOfFrames);
+    m_pCVibrato->setParam(CVibrato::kParamModWidthInS, m_rampModWidth.getNextValue() * m_rampBypass.getNextValue());
+    m_pCVibrato->setParam(CVibrato::kParamModFreqInHz, m_rampModFreq.getNextValue());
 
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        buffer.copyFrom(channel, 0, m_ppfAudioData[channel], m_iNumberOfFrames);
-    }
-    
+    m_pCVibrato->process(const_cast<float**>(buffer.getArrayOfReadPointers()), buffer.getArrayOfWritePointers(), m_iNumberOfFrames);
 }
 
 //==============================================================================
@@ -245,34 +229,35 @@ AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 
 void Vibrato_pluginAudioProcessor::setWidth(float fModWidthInS)
 {
-    if (!m_bBypass)
-    {
-        m_rampModWidth.setCurrentAndTargetValue(0.0);
-        m_rampModWidth.setTargetValue(1.0);
-        while (m_rampModWidth.getCurrentValue() != m_rampModWidth.getTargetValue())
-        {
-            m_fTempModWidthInS = ((fModWidthInS - m_fModWidthInS) * m_rampModWidth.getNextValue()) + m_fModWidthInS;
-        }
-    }
-
-    m_fModWidthInS = fModWidthInS;
+    m_rampModWidth.setTargetValue(fModWidthInS);
 }
 
 void Vibrato_pluginAudioProcessor::setFreq(float fModFreqInHz)
 {
-    m_pCVibrato->setParam(CVibrato::kParamModFreqInHz, fModFreqInHz);
+    m_rampModFreq.setTargetValue(fModFreqInHz);
 }
 
 void Vibrato_pluginAudioProcessor::toggleBypass()
 {
     m_bBypass = !m_bBypass;
+    
+    m_rampBypass.setTargetValue(1.f - int(m_bBypass));
+}
 
-    m_rampModWidth.setCurrentAndTargetValue(1.0 - m_bBypass);
-    m_rampModWidth.setTargetValue(m_bBypass);
+float Vibrato_pluginAudioProcessor::getParamRange(CVibrato::VibratoParam_t eParam, int index)
+{
+    switch (index) {
+        case 0:
+        case 1:
+            return m_aafParamRange[eParam][index];
+            break;
+        default:
+            return 0.f;
+            break;
+    }
+}
 
-    while (m_rampModWidth.getCurrentValue() != m_rampModWidth.getTargetValue())
-        m_fTempModWidthInS = m_fModWidthInS * m_rampModWidth.getNextValue();
-
-    m_fTempModWidthInS = m_fModWidthInS*!m_bBypass;
- 
+bool Vibrato_pluginAudioProcessor::isBypassed()
+{
+    return m_bBypass;
 }

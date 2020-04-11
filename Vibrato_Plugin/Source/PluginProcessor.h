@@ -60,23 +60,30 @@ public:
     void setWidth(float fModWidthInS);
     void setFreq(float fModFreqInHz);
     void toggleBypass();
+    
+    float getParamRange(CVibrato::VibratoParam_t eParam, int index);
+    bool isBypassed();
 
 private:
     //==============================================================================
     CVibrato* m_pCVibrato;
 
     float m_fMaxModWidthInS;
+    float m_fMinModWidthInS;
+    float m_fMaxModFreqInHz;
+    float m_fMinModFreqInHz;
+    
+    float m_aafParamRange[CVibrato::kNumVibratoParams][2];
+    
+    bool m_bBypass;
+    
     float m_fSampleRate;
     int m_iNumChannels;
     int m_iNumberOfFrames;
-
-    bool m_bBypass;
-
-    float** m_ppfAudioData;
-
-    float m_fModWidthInS;
-    float m_fTempModWidthInS;
+    
     SmoothedValue<float> m_rampModWidth;
+    SmoothedValue<float> m_rampModFreq;
+    SmoothedValue<float> m_rampBypass;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Vibrato_pluginAudioProcessor)
 };

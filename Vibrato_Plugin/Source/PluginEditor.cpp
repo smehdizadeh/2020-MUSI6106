@@ -23,8 +23,8 @@ Vibrato_pluginAudioProcessorEditor::Vibrato_pluginAudioProcessorEditor (Vibrato_
     addAndMakeVisible(modWidthLabel);
     modWidthLabel.setText("Modulation Width", dontSendNotification);
     modWidthLabel.attachToComponent(&modWidthSlider, true);
-    modWidthSlider.setTextValueSuffix(" sec");
-    modWidthSlider.setRange(0, 0.01f);
+    modWidthSlider.setTextValueSuffix(" ms");
+    modWidthSlider.setRange(p.getParamRange(CVibrato::kParamModWidthInS, 0)*1000.f, p.getParamRange(CVibrato::kParamModWidthInS, 1)*1000.f);
     modWidthSlider.setNumDecimalPlacesToDisplay(3);
     modWidthSlider.onValueChange = [this] {modWidthSliderChanged(); };
 
@@ -33,13 +33,18 @@ Vibrato_pluginAudioProcessorEditor::Vibrato_pluginAudioProcessorEditor (Vibrato_
     freqLabel.setText("Frequency", dontSendNotification);
     freqLabel.attachToComponent(&freqSlider, true);
     freqSlider.setTextValueSuffix(" Hz");
-    freqSlider.setRange(0.2, 20.0f);
+    freqSlider.setRange(p.getParamRange(CVibrato::kParamModFreqInHz, 0), p.getParamRange(CVibrato::kParamModFreqInHz, 1));
     freqSlider.setNumDecimalPlacesToDisplay(3);
     freqSlider.onValueChange = [this] {freqSliderChanged(); };
 
     addAndMakeVisible(bypassButton);
     bypassButton.setButtonText("Bypass");
-    bypassButton.setState(Button::ButtonState::buttonNormal);
+    if (p.isBypassed())
+    {
+        bypassButton.setState(Button::ButtonState::buttonDown);
+    }
+    else
+        bypassButton.setState(Button::ButtonState::buttonNormal);
     bypassButton.onClick = [this] {bypassButtonClicked(); };
     bypassButton.setEnabled(true);
 }
@@ -53,10 +58,7 @@ void Vibrato_pluginAudioProcessorEditor::paint (Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));
-
     g.setColour (Colours::white);
-    //g.setFont (15.0f);
-    //g.drawFittedText ("Hello World!", getLocalBounds(), Justification::centred, 1);
 }
 
 void Vibrato_pluginAudioProcessorEditor::resized()
@@ -78,7 +80,7 @@ void Vibrato_pluginAudioProcessorEditor::bypassButtonClicked()
 /*! Function that is called when the mod width slider is adjusted */
 void Vibrato_pluginAudioProcessorEditor::modWidthSliderChanged()
 {
-    processor.setWidth(modWidthSlider.getValue());
+    processor.setWidth(modWidthSlider.getValue() / 1000.f);
 }
 
 /*! Function that is called when the freq slider is adjusted */
