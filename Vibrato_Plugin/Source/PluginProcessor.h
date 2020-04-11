@@ -67,11 +67,6 @@ public:
 private:
     //==============================================================================
     CVibrato* m_pCVibrato;
-
-    float m_fMaxModWidthInS;
-    float m_fMinModWidthInS;
-    float m_fMaxModFreqInHz;
-    float m_fMinModFreqInHz;
     
     float m_aafParamRange[CVibrato::kNumVibratoParams][2];
     
