@@ -12,8 +12,8 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-Vibrato_pluginAudioProcessorEditor::Vibrato_pluginAudioProcessorEditor (Vibrato_pluginAudioProcessor& p)
-    : AudioProcessorEditor (&p), processor (p)
+Vibrato_pluginAudioProcessorEditor::Vibrato_pluginAudioProcessorEditor (Vibrato_pluginAudioProcessor& p, AudioProcessorValueTreeState& vts)
+    : AudioProcessorEditor (&p), processor (p), valueTreeState(vts)
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
@@ -24,7 +24,7 @@ Vibrato_pluginAudioProcessorEditor::Vibrato_pluginAudioProcessorEditor (Vibrato_
     modWidthLabel.setText("Modulation Width", dontSendNotification);
     modWidthLabel.attachToComponent(&modWidthSlider, true);
     modWidthSlider.setTextValueSuffix(" ms");
-    modWidthSlider.setRange(p.getParamRange(CVibrato::kParamModWidthInS, 0)*1000.f, p.getParamRange(CVibrato::kParamModWidthInS, 1)*1000.f);
+    modWidthAttachment.reset(new SliderAttachment(valueTreeState, "modWidth", modWidthSlider));
     modWidthSlider.setNumDecimalPlacesToDisplay(3);
     modWidthSlider.onValueChange = [this] {modWidthSliderChanged(); };
 
@@ -33,18 +33,13 @@ Vibrato_pluginAudioProcessorEditor::Vibrato_pluginAudioProcessorEditor (Vibrato_
     freqLabel.setText("Frequency", dontSendNotification);
     freqLabel.attachToComponent(&freqSlider, true);
     freqSlider.setTextValueSuffix(" Hz");
-    freqSlider.setRange(p.getParamRange(CVibrato::kParamModFreqInHz, 0), p.getParamRange(CVibrato::kParamModFreqInHz, 1));
+    freqAttachment.reset(new SliderAttachment(valueTreeState, "modFreq", freqSlider));
     freqSlider.setNumDecimalPlacesToDisplay(3);
     freqSlider.onValueChange = [this] {freqSliderChanged(); };
 
     addAndMakeVisible(bypassButton);
     bypassButton.setButtonText("Bypass");
-    if (p.isBypassed())
-    {
-        bypassButton.setState(Button::ButtonState::buttonDown);
-    }
-    else
-        bypassButton.setState(Button::ButtonState::buttonNormal);
+    bypassAttachment.reset(new ButtonAttachment(valueTreeState, "bypass", bypassButton));
     bypassButton.onClick = [this] {bypassButtonClicked(); };
     bypassButton.setEnabled(true);
 }
@@ -80,11 +75,11 @@ void Vibrato_pluginAudioProcessorEditor::bypassButtonClicked()
 /*! Function that is called when the mod width slider is adjusted */
 void Vibrato_pluginAudioProcessorEditor::modWidthSliderChanged()
 {
-    processor.setWidth(modWidthSlider.getValue() / 1000.f);
+    processor.setWidth();
 }
 
 /*! Function that is called when the freq slider is adjusted */
 void Vibrato_pluginAudioProcessorEditor::freqSliderChanged()
 {
-    processor.setFreq(freqSlider.getValue());
+    processor.setFreq();
 }

@@ -19,8 +19,11 @@
 class Vibrato_pluginAudioProcessorEditor  : public AudioProcessorEditor
 {
 public:
-    Vibrato_pluginAudioProcessorEditor (Vibrato_pluginAudioProcessor&);
+    Vibrato_pluginAudioProcessorEditor (Vibrato_pluginAudioProcessor&, AudioProcessorValueTreeState&);
     ~Vibrato_pluginAudioProcessorEditor();
+
+    typedef AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
+    typedef AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 
     //==============================================================================
     void paint (Graphics&) override;
@@ -38,11 +41,16 @@ private:
     // GUI members
     Slider modWidthSlider;
     Label modWidthLabel;
+    std::unique_ptr<SliderAttachment> modWidthAttachment;
 
     Slider freqSlider;
     Label freqLabel;
+    std::unique_ptr<SliderAttachment> freqAttachment;
 
     ToggleButton bypassButton;
+    std::unique_ptr<ButtonAttachment> bypassAttachment;
+
+    AudioProcessorValueTreeState& valueTreeState;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Vibrato_pluginAudioProcessorEditor)
 };

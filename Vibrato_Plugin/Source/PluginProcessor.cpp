@@ -15,8 +15,14 @@
 
 //==============================================================================
 Vibrato_pluginAudioProcessor::Vibrato_pluginAudioProcessor()
+    : parameters(*this, nullptr, Identifier("VibratoPlugin"),
+        {
+            std::make_unique<AudioParameterBool>("bypass", "Bypass", false),
+            std::make_unique<AudioParameterFloat>("modWidth", "Modulation Width", 0.f, 10.f, 0.f),
+            std::make_unique<AudioParameterFloat>("modFreq", "Modulation Frequency", 0.2f, 20.f, 0.2f)
+        }),
 #ifndef JucePlugin_PreferredChannelConfigurations
-     : AudioProcessor (BusesProperties()
+     AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
                        .withInput  ("Input",  AudioChannelSet::stereo(), true)
@@ -25,18 +31,21 @@ Vibrato_pluginAudioProcessor::Vibrato_pluginAudioProcessor()
                      #endif
                        )
 #endif
+    
 {
     // initialization for parameter variables.
     m_aafParamRange[CVibrato::kParamModWidthInS][0] = 0.f;
     m_aafParamRange[CVibrato::kParamModWidthInS][1] = 0.01f;
-    m_rampModWidth.setCurrentAndTargetValue(m_aafParamRange[CVibrato::kParamModWidthInS][0]);
+    m_pfModWidthParam = parameters.getRawParameterValue("modWidth");
+    m_rampModWidth.setCurrentAndTargetValue(*m_pfModWidthParam);
     
     m_aafParamRange[CVibrato::kParamModFreqInHz][0] = 0.2f;
     m_aafParamRange[CVibrato::kParamModFreqInHz][1] = 20.f;
-    m_rampModFreq.setCurrentAndTargetValue(m_aafParamRange[CVibrato::kParamModFreqInHz][0]);
+    m_pfModFreqParam = parameters.getRawParameterValue("modFreq");
+    m_rampModFreq.setCurrentAndTargetValue(*m_pfModFreqParam);
     
-    m_bBypass = false;
-    m_rampBypass.setCurrentAndTargetValue(1.f - int(m_bBypass));
+    m_pfBypassParam = parameters.getRawParameterValue("bypass");
+    m_rampBypass.setCurrentAndTargetValue(1.f - *m_pfBypassParam);
 
     // empty initialization for changeable member variables.
     m_iNumChannels = 0;
@@ -197,7 +206,7 @@ bool Vibrato_pluginAudioProcessor::hasEditor() const
 
 AudioProcessorEditor* Vibrato_pluginAudioProcessor::createEditor()
 {
-    return new Vibrato_pluginAudioProcessorEditor (*this);
+    return new Vibrato_pluginAudioProcessorEditor (*this, parameters);
 }
 
 //==============================================================================
@@ -206,12 +215,24 @@ void Vibrato_pluginAudioProcessor::getStateInformation (MemoryBlock& destData)
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    auto state = parameters.copyState();
+    std::unique_ptr<XmlElement> xml(state.createXml());
+    copyXmlToBinary(*xml, destData);
 }
 
 void Vibrato_pluginAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+    std::unique_ptr<XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
+    if (xmlState.get() != nullptr)
+        if (xmlState->hasTagName(parameters.state.getType()))
+        {
+            parameters.replaceState(ValueTree::fromXml(*xmlState));
+            setWidth();
+            setFreq();
+            toggleBypass();
+        }
 }
 
 const double Vibrato_pluginAudioProcessor::getSampleRate()
@@ -227,38 +248,30 @@ AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 }
 
 
-void Vibrato_pluginAudioProcessor::setWidth(float fModWidthInS)
+void Vibrato_pluginAudioProcessor::setWidth()
 {
-    m_rampModWidth.setTargetValue(fModWidthInS);
+    m_rampModWidth.setTargetValue((*m_pfModWidthParam)/1000.f);
 }
 
-void Vibrato_pluginAudioProcessor::setFreq(float fModFreqInHz)
+void Vibrato_pluginAudioProcessor::setFreq()
 {
-    m_rampModFreq.setTargetValue(fModFreqInHz);
+    m_rampModFreq.setTargetValue(*m_pfModFreqParam);
 }
 
 void Vibrato_pluginAudioProcessor::toggleBypass()
-{
-    m_bBypass = !m_bBypass;
-    
-    m_rampBypass.setTargetValue(1.f - int(m_bBypass));
+{    
+    m_rampBypass.setTargetValue(1.f - *m_pfBypassParam);
 }
 
 float Vibrato_pluginAudioProcessor::getParamRange(CVibrato::VibratoParam_t eParam, int index)
 {
-    switch (index) {
-        case 0:
-            break;
-        case 1:
-            return m_aafParamRange[eParam][index];
-            break;
-        default:
-            return 0.f;
-            break;
-    }
+    return m_aafParamRange[eParam][index];
 }
 
 bool Vibrato_pluginAudioProcessor::isBypassed()
 {
-    return m_bBypass;
+    if (*m_pfBypassParam == 1.f)
+        return true;
+    else
+        return false;
 }

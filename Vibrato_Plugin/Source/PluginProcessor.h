@@ -57,8 +57,8 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
     const double getSampleRate();
 
-    void setWidth(float fModWidthInS);
-    void setFreq(float fModFreqInHz);
+    void setWidth();
+    void setFreq();
     void toggleBypass();
     
     float getParamRange(CVibrato::VibratoParam_t eParam, int index);
@@ -70,7 +70,9 @@ private:
     
     float m_aafParamRange[CVibrato::kNumVibratoParams][2];
     
-    bool m_bBypass;
+    std::atomic<float>* m_pfBypassParam = nullptr;
+    std::atomic<float>* m_pfModWidthParam = nullptr;
+    std::atomic<float>* m_pfModFreqParam = nullptr;
     
     float m_fSampleRate;
     int m_iNumChannels;
@@ -79,6 +81,8 @@ private:
     SmoothedValue<float> m_rampModWidth;
     SmoothedValue<float> m_rampModFreq;
     SmoothedValue<float> m_rampBypass;
+
+    AudioProcessorValueTreeState parameters;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Vibrato_pluginAudioProcessor)
 };
